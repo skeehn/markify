@@ -232,7 +232,7 @@ def generate_report(scrape_results: list, vsb_results: list, search_results: lis
 
     lines.append("Markify delivers **VSB-Graph structured extraction**, **hybrid BM25+HNSW search with RRF fusion**, ")
     lines.append("**ML-powered block classification**, **distributed crawling**, and **12 MCP tools** — all in a ")
-    lines.append("single MIT-licensed Rust binary using ~6KB memory.")
+    lines.append("single Apache-2.0 Rust binary that streams HTML parsing in ~6KB of constant memory per document.")
     lines.append("")
 
     if markify_times and fc_times:
@@ -339,7 +339,7 @@ def generate_report(scrape_results: list, vsb_results: list, search_results: lis
     lines.append("3. **Enterprise Anti-Bot** — Proxy rotation, stealth, CAPTCHA solving, bot detection")
     lines.append("4. **Distributed Crawler** — URL frontier, bloom filter, change detection, checkpoints")
     lines.append("5. **12 MCP Tools** — Native AI agent integration")
-    lines.append("6. **Single Binary** — ~6KB memory, 10-20x faster than Python alternatives")
+    lines.append("6. **Single Binary** — streaming HTML parse in ~6KB constant memory per document")
     lines.append("7. **better-auth** — Multi-tenant auth with API keys, roles, 2FA, rate limiting")
     lines.append("8. **OpenTelemetry** — Distributed tracing, metrics, Jaeger/Prometheus export")
     lines.append("")

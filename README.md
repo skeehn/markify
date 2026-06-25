@@ -17,7 +17,7 @@ Scrape, search, extract, and structure web data — faster than anything else. A
 | **Language** | **Rust** | Python/TS | Python |
 | **MCP-First** | **✅ Primary** | ❌ Bolt-on | ❌ |
 | **Self-Hosted** | **Single binary** | Docker compose | Limited |
-| **Memory** | **5-6KB** | ~50MB | ~200MB |
+| **HTML parse** | **~6 KB/doc (streaming)** | full-DOM buffer | full-DOM buffer |
 | **Scrape** | ✅ | ✅ | ✅ |
 | **Search** | ✅ | ✅ (v2) | ✅ |
 | **Search+Scrape** | **One call** | Two calls | Two calls |

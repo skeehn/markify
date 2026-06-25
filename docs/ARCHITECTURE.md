@@ -101,7 +101,7 @@ Seed URLs → URL Frontier (priority queue) → Dedup (bloom filter)
 
 ## Key Design Decisions
 
-1. **Rust everywhere** — Single binary, ~6KB memory, no GC pauses
+1. **Rust everywhere** — Single binary, streaming HTML parse in ~6KB constant memory, no GC pauses
 2. **HTTP-first + browser fallback** — 80% of pages work without JS, 20% escalate
 3. **VSB-Graph over flat Markdown** — 35 semantic block types with provenance tracking
 4. **Hybrid search** — BM25 for exact keywords + HNSW for semantic meaning + RRF fusion
