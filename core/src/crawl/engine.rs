@@ -192,13 +192,22 @@ impl DomainState {
     pub fn enter_backoff(&mut self, duration: Duration) {
         self.backing_off = true;
         self.backoff_until = Some(Instant::now() + duration);
-        warn!(duration_secs = duration.as_secs(), "Domain entered back-off");
+        warn!(
+            duration_secs = duration.as_secs(),
+            "Domain entered back-off"
+        );
     }
 
     /// Exit back-off
     pub fn exit_backoff(&mut self) {
         self.backing_off = false;
         self.backoff_until = None;
+    }
+}
+
+impl Default for UrlFrontier {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -241,7 +250,8 @@ impl UrlFrontier {
         for queue in &mut self.queues {
             let mut skipped = Vec::new();
             while let Some(url) = queue.pop_front() {
-                let domain_state = self.domain_state
+                let domain_state = self
+                    .domain_state
                     .entry(url.domain.clone())
                     .or_insert_with(|| DomainState::new(1000, 10, Duration::from_secs(60)));
 
@@ -286,10 +296,8 @@ impl UrlFrontier {
             match status {
                 429 => state.enter_backoff(Duration::from_secs(60)),
                 503 => state.enter_backoff(Duration::from_secs(30)),
-                200 | 301 | 302 | 304 => {
-                    if state.backing_off {
-                        state.exit_backoff();
-                    }
+                200 | 301 | 302 | 304 if state.backing_off => {
+                    state.exit_backoff();
                 }
                 _ => {}
             }
@@ -449,7 +457,11 @@ impl ContentFingerprint {
         let changed = self.content_hash != other.content_hash;
         // Simple hash comparison (exact match = 1.0, different = 0.0)
         // In production, use MinHash/SimHash for similarity
-        let similarity = if self.content_hash == other.content_hash { 1.0 } else { 0.0 };
+        let similarity = if self.content_hash == other.content_hash {
+            1.0
+        } else {
+            0.0
+        };
         let change_rate = if other.crawl_count == 0 {
             0.0
         } else {
@@ -563,7 +575,12 @@ impl CrawlJob {
     }
 
     /// Create a checkpoint
-    pub fn checkpoint(&mut self, _frontier: &UrlFrontier, seen: &HashSet<String>, fingerprints: &HashMap<String, ContentFingerprint>) {
+    pub fn checkpoint(
+        &mut self,
+        _frontier: &UrlFrontier,
+        seen: &HashSet<String>,
+        fingerprints: &HashMap<String, ContentFingerprint>,
+    ) {
         self.checkpoint = Some(CrawlCheckpoint {
             frontier_urls: Vec::new(), // Serialized from frontier
             seen_urls: seen.clone(),
@@ -659,7 +676,7 @@ mod tests {
     fn test_bloom_filter() {
         let mut bf = CrawlBloomFilter::new(1000, 0.01);
         assert!(!bf.might_contain("https://example.com"));
-        
+
         bf.add("https://example.com");
         assert!(bf.might_contain("https://example.com"));
         assert!(!bf.might_contain("https://other.com")); // Should be false
@@ -668,16 +685,16 @@ mod tests {
     #[test]
     fn test_url_frontier() {
         let mut frontier = UrlFrontier::new();
-        
+
         let url1 = FrontierUrl::new("https://a.com/page1", "job1", 3);
         let url2 = FrontierUrl::new("https://b.com/page2", "job1", 3);
-        
+
         frontier.push(url1);
         frontier.push(url2);
-        
+
         let stats = frontier.stats();
         assert_eq!(stats.total, 2);
-        
+
         // Should be able to pop both
         let first = frontier.pop_next();
         assert!(first.is_some());
@@ -691,11 +708,11 @@ mod tests {
         let mut frontier = UrlFrontier::new();
         frontier.set_domain_policy("slow.com", 5000, 5, Duration::from_secs(60));
         frontier.report_domain_status("slow.com", 429);
-        
+
         // After 429, domain should be in back-off
         let url = FrontierUrl::new("https://slow.com/page", "job1", 1);
         frontier.push(url);
-        
+
         // pop_next should return None because domain is backing off
         assert!(frontier.pop_next().is_none());
     }
@@ -705,11 +722,11 @@ mod tests {
         let fp1 = ContentFingerprint::new("https://example.com", "<html>Hello</html>");
         let fp2 = ContentFingerprint::new("https://example.com", "<html>Hello</html>");
         let fp3 = ContentFingerprint::new("https://example.com", "<html>Changed</html>");
-        
+
         let result_same = fp1.compare(&fp2);
         assert!(!result_same.changed);
         assert_eq!(result_same.similarity, 1.0);
-        
+
         let result_diff = fp1.compare(&fp3);
         assert!(result_diff.changed);
         assert_eq!(result_diff.similarity, 0.0);

@@ -1,8 +1,8 @@
 //! Link extraction with relevance scoring.
 
-use scraper::{Html, Selector, ElementRef};
-use url::Url;
+use scraper::{ElementRef, Html, Selector};
 use tracing::debug;
+use url::Url;
 
 use crate::extract::LinkInfo;
 
@@ -12,7 +12,9 @@ pub fn extract_links(html: &str, base_url: Option<&str>) -> Vec<LinkInfo> {
     let selector = Selector::parse("a[href]").unwrap();
 
     let base_domain = base_url.and_then(|u| {
-        Url::parse(u).ok().and_then(|u| u.host_str().map(|h| h.to_string()))
+        Url::parse(u)
+            .ok()
+            .and_then(|u| u.host_str().map(|h| h.to_string()))
     });
 
     let links: Vec<LinkInfo> = document

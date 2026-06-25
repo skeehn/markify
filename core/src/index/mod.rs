@@ -5,10 +5,10 @@
 //! Phase 3: Hybrid RRF fusion — ✅
 //! Phase 4: Temporal property graph — TODO
 
-pub mod sparse;
 pub mod dense;
 pub mod hybrid;
+pub mod sparse;
 
-pub use sparse::{SparseIndex, SparseSearchResult};
 pub use dense::{DenseIndex, DenseSearchResult, DenseVector};
-pub use hybrid::{HybridSearcher, HybridSearchResult, RrfConfig, reciprocal_rank_fusion};
+pub use hybrid::{reciprocal_rank_fusion, HybridSearchResult, HybridSearcher, RrfConfig};
+pub use sparse::{SparseIndex, SparseSearchResult};

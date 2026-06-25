@@ -3,27 +3,22 @@
 use axum::{
     extract::State,
     http::StatusCode,
-    Json,
-    Router,
     routing::{get, post},
+    Json, Router,
 };
+use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
-use std::sync::Arc;
 
-use nexis_core::{
-    Markify, ScrapeRequest, ScrapeResult, ScrapeMeta,
-    OutputFormat, ExtractionMode,
-    FetchConfig, CacheConfig,
-    SearchClient, SearchConfig,
-    Telemetry,
-    ExaClient, CilowClient,
-    SparseIndex, DenseIndex, HybridSearcher, RrfConfig,
-    structured_api::spec::{ApiSpec, GenerateApiRequest, ExecuteApiRequest},
+use markify_core::{
+    crawl::{ContentFingerprint, CrawlBloomFilter, FrontierUrl, UrlFrontier},
+    crawl::{CrawlJob, CrawlPageResult, CrawlStatus},
+    structured_api::spec::{ApiSpec, ExecuteApiRequest, GenerateApiRequest},
     vsb_graph::segment_page,
-    crawl::{CrawlRequest, CrawlJob, CrawlStatus, CrawlPageResult},
-    crawl::{UrlFrontier, FrontierUrl, CrawlBloomFilter, CrawlEngineConfig, ContentFingerprint},
+    CacheConfig, CilowClient, DenseIndex, ExaClient, ExtractionMode, FetchConfig, HybridSearcher,
+    Markify, OutputFormat, RrfConfig, ScrapeMeta, ScrapeRequest, ScrapeResult, SearchClient,
+    SearchConfig, SparseIndex, Telemetry,
 };
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -75,10 +70,7 @@ pub fn create_router() -> Router {
     }
 
     let state = Arc::new(AppState {
-        client: Markify::new(
-            FetchConfig::default(),
-            CacheConfig::default(),
-        ),
+        client: Markify::new(FetchConfig::default(), CacheConfig::default()),
         search: search_client,
         exa: exa_client,
         cilow: cilow_client,
@@ -149,20 +141,18 @@ pub fn create_router() -> Router {
 async fn health_handler() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "status": "ok",
-        "service": "nexis",
+        "service": "markify",
         "version": env!("CARGO_PKG_VERSION"),
     }))
 }
 
 /// v1 health check with real stats
-async fn health_v1_handler(
-    State(state): State<Arc<AppState>>,
-) -> Json<serde_json::Value> {
+async fn health_v1_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let telem_stats = state.telemetry.stats();
 
     Json(serde_json::json!({
         "status": "ok",
-        "service": "nexis",
+        "service": "markify",
         "version": env!("CARGO_PKG_VERSION"),
         "telemetry": telem_stats,
     }))
@@ -181,7 +171,8 @@ async fn scrape_handler(
     }
 
     // Parse output formats
-    let formats: Vec<OutputFormat> = req.formats
+    let formats: Vec<OutputFormat> = req
+        .formats
         .as_ref()
         .unwrap_or(&vec!["both".to_string()])
         .iter()
@@ -194,7 +185,8 @@ async fn scrape_handler(
         .collect();
 
     // Parse extraction mode
-    let mode = req.mode
+    let mode = req
+        .mode
         .as_ref()
         .map(|m| match m.as_str() {
             "article" => ExtractionMode::Article,
@@ -221,11 +213,9 @@ async fn scrape_handler(
 
     match state.client.scrape(scrape_req).await {
         Ok((result, meta)) => {
-            state.telemetry.record_success(
-                meta.total_ms,
-                meta.cached,
-                &meta.engine,
-            );
+            state
+                .telemetry
+                .record_success(meta.total_ms, meta.cached, &meta.engine);
             (
                 StatusCode::OK,
                 Json(ScrapeResponseV1::success(result, meta)),
@@ -357,7 +347,7 @@ async fn legacy_convert_handler(
     State(_state): State<Arc<AppState>>,
     Json(req): Json<LegacyConvertRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    use nexis_core::transform::markdown::to_markdown;
+    use markify_core::transform::markdown::to_markdown;
 
     let markdown = to_markdown(&req.html);
 
@@ -469,7 +459,10 @@ async fn search_handler(
 
     // If scrape_results is true, scrape each search result
     if req.scrape_results.unwrap_or(false) {
-        match search_client.search_and_scrape(&req.query, num, &state.client).await {
+        match search_client
+            .search_and_scrape(&req.query, num, &state.client)
+            .await
+        {
             Ok(results) => (
                 StatusCode::OK,
                 Json(serde_json::json!({
@@ -525,7 +518,8 @@ async fn generate_api_handler(
         );
     }
 
-    match nexis_core::generate_api_spec(&req.url, req.description.as_deref(), &state.client).await {
+    match markify_core::generate_api_spec(&req.url, req.description.as_deref(), &state.client).await
+    {
         Ok(spec) => {
             let id = spec.id.clone();
             // Store the spec
@@ -552,21 +546,22 @@ async fn generate_api_handler(
     }
 }
 
-async fn list_apis_handler(
-    State(state): State<Arc<AppState>>,
-) -> Json<serde_json::Value> {
+async fn list_apis_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let specs = if let Ok(specs) = state.api_specs.read() {
-        specs.values().map(|s| {
-            serde_json::json!({
-                "id": s.id,
-                "name": s.name,
-                "url": s.url,
-                "description": s.description,
-                "endpoints": s.endpoints.len(),
-                "status": s.status,
-                "created_at": s.created_at,
+        specs
+            .values()
+            .map(|s| {
+                serde_json::json!({
+                    "id": s.id,
+                    "name": s.name,
+                    "url": s.url,
+                    "description": s.description,
+                    "endpoints": s.endpoints.len(),
+                    "status": s.status,
+                    "created_at": s.created_at,
+                })
             })
-        }).collect::<Vec<_>>()
+            .collect::<Vec<_>>()
     } else {
         vec![]
     };
@@ -629,10 +624,16 @@ async fn execute_api_handler(
     };
 
     // Find the first endpoint or use the one specified
-    let endpoint_name = req.params
+    let endpoint_name = req
+        .params
         .as_ref()
         .and_then(|p| p.get("endpoint").and_then(|v| v.as_str()))
-        .unwrap_or_else(|| spec.endpoints.first().map(|e| e.name.as_str()).unwrap_or(""));
+        .unwrap_or_else(|| {
+            spec.endpoints
+                .first()
+                .map(|e| e.name.as_str())
+                .unwrap_or("")
+        });
 
     if endpoint_name.is_empty() {
         return (
@@ -644,12 +645,9 @@ async fn execute_api_handler(
         );
     }
 
-    match nexis_core::execute_api_spec(
-        &spec,
-        endpoint_name,
-        &state.client,
-        req.url.as_deref(),
-    ).await {
+    match markify_core::execute_api_spec(&spec, endpoint_name, &state.client, req.url.as_deref())
+        .await
+    {
         Ok(result) => (
             StatusCode::OK,
             Json(serde_json::json!({
@@ -793,7 +791,10 @@ async fn export_cilow_handler(
 
     match state.client.scrape(scrape_req).await {
         Ok((result, meta)) => {
-            match cilow.export_document(&result, &meta, req.tags.clone()).await {
+            match cilow
+                .export_document(&result, &meta, req.tags.clone())
+                .await
+            {
                 Ok(export_result) => (
                     StatusCode::OK,
                     Json(serde_json::json!({
@@ -863,13 +864,11 @@ async fn vsb_handler(
 
     match state.client.scrape(scrape_req).await {
         Ok((result, meta)) => {
-            state.telemetry.record_success(
-                meta.total_ms,
-                meta.cached,
-                &meta.engine,
-            );
+            state
+                .telemetry
+                .record_success(meta.total_ms, meta.cached, &meta.engine);
 
-            let html = result.raw_html.as_ref().map(|h| h.as_str()).unwrap_or("");
+            let html = result.raw_html.as_deref().unwrap_or("");
 
             // Segment into VSB-Graph
             let graph = segment_page(html, &req.url);
@@ -882,14 +881,16 @@ async fn vsb_handler(
                     for (block_id, block) in &graph.blocks {
                         // Extract headers from text (lines that look like headings)
                         let lines: Vec<&str> = block.text.lines().collect();
-                        let headers: Vec<&str> = lines.iter()
+                        let headers: Vec<&str> = lines
+                            .iter()
                             .filter(|l| l.len() < 100 && (l.len() < 60 || l.ends_with(':')))
                             .copied()
                             .collect();
                         let headers_text = headers.join(" ");
-                        
+
                         // Metadata from block type and semantic role
-                        let metadata = format!("{} {}", 
+                        let metadata = format!(
+                            "{} {}",
                             format!("{:?}", block.block_type),
                             format!("{:?}", block.semantic_role),
                         );
@@ -909,7 +910,7 @@ async fn vsb_handler(
 
                 // Dense vector index
                 if let Ok(mut dense) = state.dense_index.write() {
-                    let di: &mut DenseIndex = &mut *dense;
+                    let di: &mut DenseIndex = &mut dense;
                     for (block_id, block) in &graph.blocks {
                         di.add_entry(
                             block_id,
@@ -978,7 +979,7 @@ async fn search_index_handler(
     let limit = params.limit.unwrap_or(10);
 
     let results = if let Ok(index) = state.sparse_index.read() {
-        let si: &SparseIndex = &*index;
+        let si: &SparseIndex = &index;
         match si.search(&params.q, limit) {
             Ok(results) => results,
             Err(e) => {
@@ -1028,7 +1029,7 @@ async fn neural_index_handler(
     let limit = req.limit.unwrap_or(10);
 
     let results = if let Ok(index) = state.dense_index.read() {
-        let di: &DenseIndex = &*index;
+        let di: &DenseIndex = &index;
         di.search(&req.query, limit)
     } else {
         return Json(serde_json::json!({
@@ -1085,34 +1086,38 @@ async fn hybrid_index_handler(
     };
 
     // Build hybrid searcher from current indexes
-    let searcher = {
+    {
         let sparse = state.sparse_index.read();
         let dense = state.dense_index.read();
-        
+
         match (sparse, dense) {
             (Ok(si), Ok(di)) => {
                 // Clone indexes for the searcher (they're Arc-backed internally)
                 // For now, use the search methods directly
                 let bm25_results = si.search(&req.query, limit).unwrap_or_default();
                 let dense_results = di.search(&req.query, limit);
-                
+
                 match mode {
                     "bm25_only" => {
-                        let results = bm25_results.into_iter().enumerate().map(|(rank, r)| {
-                            serde_json::json!({
-                                "block_id": r.block_id,
-                                "url": r.url,
-                                "title": r.title,
-                                "snippet": r.text_snippet,
-                                "hybrid_score": r.score,
-                                "bm25_score": r.score,
-                                "bm25_rank": rank + 1,
-                                "dense_similarity": null,
-                                "dense_rank": null,
-                                "block_type": r.block_type,
+                        let results = bm25_results
+                            .into_iter()
+                            .enumerate()
+                            .map(|(rank, r)| {
+                                serde_json::json!({
+                                    "block_id": r.block_id,
+                                    "url": r.url,
+                                    "title": r.title,
+                                    "snippet": r.text_snippet,
+                                    "hybrid_score": r.score,
+                                    "bm25_score": r.score,
+                                    "bm25_rank": rank + 1,
+                                    "dense_similarity": null,
+                                    "dense_rank": null,
+                                    "block_type": r.block_type,
+                                })
                             })
-                        }).collect::<Vec<_>>();
-                        
+                            .collect::<Vec<_>>();
+
                         return Json(serde_json::json!({
                             "success": true,
                             "mode": "bm25_only",
@@ -1122,21 +1127,25 @@ async fn hybrid_index_handler(
                         }));
                     }
                     "dense_only" => {
-                        let results = dense_results.into_iter().enumerate().map(|(rank, r)| {
-                            serde_json::json!({
-                                "block_id": r.block_id,
-                                "url": r.url,
-                                "title": r.title,
-                                "snippet": r.text_snippet,
-                                "hybrid_score": r.similarity,
-                                "bm25_score": null,
-                                "bm25_rank": null,
-                                "dense_similarity": r.similarity,
-                                "dense_rank": rank + 1,
-                                "block_type": r.block_type,
+                        let results = dense_results
+                            .into_iter()
+                            .enumerate()
+                            .map(|(rank, r)| {
+                                serde_json::json!({
+                                    "block_id": r.block_id,
+                                    "url": r.url,
+                                    "title": r.title,
+                                    "snippet": r.text_snippet,
+                                    "hybrid_score": r.similarity,
+                                    "bm25_score": null,
+                                    "bm25_rank": null,
+                                    "dense_similarity": r.similarity,
+                                    "dense_rank": rank + 1,
+                                    "block_type": r.block_type,
+                                })
                             })
-                        }).collect::<Vec<_>>();
-                        
+                            .collect::<Vec<_>>();
+
                         return Json(serde_json::json!({
                             "success": true,
                             "mode": "dense_only",
@@ -1147,25 +1156,30 @@ async fn hybrid_index_handler(
                     }
                     _ => {
                         // Hybrid RRF fusion
-                        let fused = nexis_core::index::hybrid::reciprocal_rank_fusion(
-                            bm25_results, dense_results, &rrf_config,
+                        let fused = markify_core::index::hybrid::reciprocal_rank_fusion(
+                            bm25_results,
+                            dense_results,
+                            &rrf_config,
                         );
-                        
-                        let results = fused.into_iter().map(|r| {
-                            serde_json::json!({
-                                "block_id": r.block_id,
-                                "url": r.url,
-                                "title": r.title,
-                                "snippet": r.text_snippet,
-                                "hybrid_score": r.hybrid_score,
-                                "bm25_score": r.bm25_score,
-                                "bm25_rank": r.bm25_rank,
-                                "dense_similarity": r.dense_similarity,
-                                "dense_rank": r.dense_rank,
-                                "block_type": r.block_type,
+
+                        let results = fused
+                            .into_iter()
+                            .map(|r| {
+                                serde_json::json!({
+                                    "block_id": r.block_id,
+                                    "url": r.url,
+                                    "title": r.title,
+                                    "snippet": r.text_snippet,
+                                    "hybrid_score": r.hybrid_score,
+                                    "bm25_score": r.bm25_score,
+                                    "bm25_rank": r.bm25_rank,
+                                    "dense_similarity": r.dense_similarity,
+                                    "dense_rank": r.dense_rank,
+                                    "block_type": r.block_type,
+                                })
                             })
-                        }).collect::<Vec<_>>();
-                        
+                            .collect::<Vec<_>>();
+
                         return Json(serde_json::json!({
                             "success": true,
                             "mode": "hybrid_rrf",
@@ -1187,14 +1201,13 @@ async fn hybrid_index_handler(
             }
         }
     };
-    
-    let _ = searcher; // suppress unused variable warning
+
+    (); // suppress unused variable warning
 }
 
 // ─── Crawl Engine Handlers ───────────────────────────────────────────────────
 
-use nexis_core::crawl::engine::CrawlJob as EngineCrawlJob;
-use nexis_core::crawl::engine::CrawlJobState;
+use markify_core::crawl::engine::CrawlJob as EngineCrawlJob;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct CrawlStartRequest {
@@ -1230,7 +1243,9 @@ async fn crawl_start_handler(
 
     let mut job = EngineCrawlJob::new(
         &job_id,
-        req.name.as_deref().unwrap_or(&format!("Crawl: {}", req.url)),
+        req.name
+            .as_deref()
+            .unwrap_or(&format!("Crawl: {}", req.url)),
         vec![req.url.clone()],
         max_depth,
     );
@@ -1291,7 +1306,7 @@ async fn crawl_status_handler(
     axum::extract::Query(params): axum::extract::Query<CrawlStatusQuery>,
 ) -> Json<serde_json::Value> {
     let jobs = state.crawl_jobs.read();
-    
+
     match jobs {
         Ok(jobs) => {
             if let Some(job_id) = params.job_id {
@@ -1309,7 +1324,7 @@ async fn crawl_status_handler(
                     "error": format!("Job {} not found", job_id),
                 }));
             }
-            
+
             // List all jobs
             let job_list: Vec<_> = jobs.values().collect();
             Json(serde_json::json!({
@@ -1321,7 +1336,7 @@ async fn crawl_status_handler(
         Err(_) => Json(serde_json::json!({
             "success": false,
             "error": "Jobs locked",
-        }))
+        })),
     }
 }
 
@@ -1345,7 +1360,7 @@ async fn crawl_stop_handler(
             }));
         }
     }
-    
+
     Json(serde_json::json!({
         "success": false,
         "error": format!("Job {} not found", req.job_id),
@@ -1357,31 +1372,27 @@ pub struct CrawlStopRequest {
     pub job_id: String,
 }
 
-async fn crawl_list_jobs_handler(
-    State(state): State<Arc<AppState>>,
-) -> Json<serde_json::Value> {
-    let job_list = state.crawl_jobs.read()
+async fn crawl_list_jobs_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+    let job_list = state
+        .crawl_jobs
+        .read()
         .map(|j| j.values().cloned().collect::<Vec<_>>())
         .unwrap_or_default();
-    
-    let frontier_stats = state.crawl_frontier.read()
-        .ok()
-        .map(|f| {
-            let stats = f.stats();
-            serde_json::json!({
-                "total": stats.total,
-                "critical": stats.critical,
-                "high": stats.high,
-                "normal": stats.normal,
-                "low": stats.low,
-                "domain_count": stats.domain_count,
-            })
-        });
-    
-    let bloom_count = state.crawl_bloom.read()
-        .ok()
-        .map(|b| b.len());
-    
+
+    let frontier_stats = state.crawl_frontier.read().ok().map(|f| {
+        let stats = f.stats();
+        serde_json::json!({
+            "total": stats.total,
+            "critical": stats.critical,
+            "high": stats.high,
+            "normal": stats.normal,
+            "low": stats.low,
+            "domain_count": stats.domain_count,
+        })
+    });
+
+    let bloom_count = state.crawl_bloom.read().ok().map(|b| b.len());
+
     Json(serde_json::json!({
         "success": true,
         "total_jobs": job_list.len(),
@@ -1412,7 +1423,7 @@ async fn crawl_results_handler(
             "error": format!("No results found for job {}", job_id),
         }));
     }
-    
+
     Json(serde_json::json!({
         "success": false,
         "error": "job_id query parameter is required",

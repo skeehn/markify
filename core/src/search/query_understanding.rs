@@ -8,9 +8,9 @@
 //! 3. **Spell & Abbreviation Expansion**: Generate candidate rewrites
 //! 4. **Query Rewriting**: Fast rule-based → slow LLM cascade
 
-use std::collections::HashMap;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // ─── Intent Detection ────────────────────────────────────────────────────────
 
@@ -44,6 +44,12 @@ pub struct IntentClassifier {
     entity_patterns: Vec<Regex>,
 }
 
+impl Default for IntentClassifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IntentClassifier {
     pub fn new() -> Self {
         Self {
@@ -51,9 +57,10 @@ impl IntentClassifier {
                 Regex::new(r"(?i)\b(site|website|homepage|login|signin|signup)\b").unwrap(),
                 Regex::new(r"(?i)\b[A-Za-z0-9.-]+\.[a-z]{2,}(/\S*)?\b").unwrap(), // URL-like
             ],
-            transactional_patterns: vec![
-                Regex::new(r"(?i)\b(buy|download|install|register|subscribe|order)\b").unwrap(),
-            ],
+            transactional_patterns: vec![Regex::new(
+                r"(?i)\b(buy|download|install|register|subscribe|order)\b",
+            )
+            .unwrap()],
             entity_patterns: vec![
                 Regex::new(r"(?i)\b(who|what|when|where)\s+(is|was|are)\b").unwrap(),
                 Regex::new(r"^[A-Z][a-z]+\s+[A-Z][a-z]+$").unwrap(), // Capitalized names
@@ -151,7 +158,8 @@ pub fn extract_entities(query: &str) -> EntityExtractionResult {
     let mut entities = Vec::new();
 
     // Date patterns: 2024-01-01, Jan 2024, Q1 2024
-    let date_re = Regex::new(r"\b(\d{4}-\d{2}-\d{2}|[A-Z][a-z]{2}\s+\d{4}|Q[1-4]\s+\d{4})\b").unwrap();
+    let date_re =
+        Regex::new(r"\b(\d{4}-\d{2}-\d{2}|[A-Z][a-z]{2}\s+\d{4}|Q[1-4]\s+\d{4})\b").unwrap();
     for mat_ in date_re.find_iter(query) {
         entities.push(ExtractedEntity {
             entity_type: EntityType::Date,
@@ -161,7 +169,8 @@ pub fn extract_entities(query: &str) -> EntityExtractionResult {
     }
 
     // Number + unit patterns: 100ms, 5GB, 10px
-    let number_unit_re = Regex::new(r"\b(\d+(?:\.\d+)?)\s*(ms|GB|MB|KB|px|em|rem|kg|cm|m)\b").unwrap();
+    let number_unit_re =
+        Regex::new(r"\b(\d+(?:\.\d+)?)\s*(ms|GB|MB|KB|px|em|rem|kg|cm|m)\b").unwrap();
     for mat_ in number_unit_re.find_iter(query) {
         entities.push(ExtractedEntity {
             entity_type: EntityType::Unit,
@@ -201,14 +210,16 @@ pub fn extract_entities(query: &str) -> EntityExtractionResult {
     }
 
     // Clean query by removing entity-specific modifiers
-    let cleaned = filetype_re.replace_all(query, "")
-        .trim()
-        .to_string();
+    let cleaned = filetype_re.replace_all(query, "").trim().to_string();
     let cleaned = lang_re.replace_all(&cleaned, "").trim().to_string();
 
     EntityExtractionResult {
         entities,
-        cleaned_query: if cleaned.is_empty() { query.to_string() } else { cleaned },
+        cleaned_query: if cleaned.is_empty() {
+            query.to_string()
+        } else {
+            cleaned
+        },
     }
 }
 

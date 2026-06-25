@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use crate::extract::{Metadata, LinkInfo, ImageInfo};
+use crate::extract::{ImageInfo, LinkInfo, Metadata};
 
 /// Build structured JSON from extracted content and metadata.
 pub fn to_structured_json(
@@ -38,27 +38,33 @@ pub fn to_structured_json(
 
     // Add links
     if let Some(links) = links {
-        result["links"] = json!(links.iter().map(|l| {
-            json!({
-                "text": l.text,
-                "url": l.url,
-                "score": l.score,
-                "is_internal": l.is_internal,
+        result["links"] = json!(links
+            .iter()
+            .map(|l| {
+                json!({
+                    "text": l.text,
+                    "url": l.url,
+                    "score": l.score,
+                    "is_internal": l.is_internal,
+                })
             })
-        }).collect::<Vec<_>>());
+            .collect::<Vec<_>>());
     }
 
     // Add images
     if let Some(images) = images {
-        result["images"] = json!(images.iter().map(|i| {
-            json!({
-                "src": i.src,
-                "alt": i.alt,
-                "width": i.width,
-                "height": i.height,
-                "is_content": i.is_content,
+        result["images"] = json!(images
+            .iter()
+            .map(|i| {
+                json!({
+                    "src": i.src,
+                    "alt": i.alt,
+                    "width": i.width,
+                    "height": i.height,
+                    "is_content": i.is_content,
+                })
             })
-        }).collect::<Vec<_>>());
+            .collect::<Vec<_>>());
     }
 
     result

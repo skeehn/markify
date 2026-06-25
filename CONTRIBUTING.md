@@ -1,6 +1,6 @@
-# Contributing to Nexis
+# Contributing to Markify
 
-Thank you for your interest! Nexis is Apache 2.0 licensed and welcomes contributions.
+Thank you for your interest! Markify is Apache 2.0 licensed and welcomes contributions.
 
 ## Getting Started
 
@@ -11,17 +11,17 @@ Thank you for your interest! Nexis is Apache 2.0 licensed and welcomes contribut
 
 ### Setup
 ```bash
-git clone https://github.com/skeehn/nexis
-cd nexis
+git clone https://github.com/skeehn/markify
+cd markify
 cargo build
 cargo test
 ```
 
 ### Running the Server
 ```bash
-cargo run --bin nexis -- server
+cargo run --bin markify -- server
 # Or with search
-SERPER_API_KEY=xxx cargo run --bin nexis -- server
+SERPER_API_KEY=xxx cargo run --bin markify -- server
 ```
 
 ## Development Workflow
@@ -79,7 +79,7 @@ python benchmarks/run_benchmarks.py
 ## Project Structure
 
 ```
-nexis/
+markify/
 ├── core/src/           # Core Rust library
 │   ├── scrape.rs       # Main scraper
 │   ├── vsb_graph/      # VSB-Graph segmentation
@@ -99,7 +99,7 @@ nexis/
 
 - **Bugs**: Include steps to reproduce, expected/actual behavior, logs
 - **Features**: Describe the use case and why it's valuable
-- **Security**: Email skeehn@nexis.dev directly (don't open a public issue)
+- **Security**: Email skeehn@markify.dev directly (don't open a public issue)
 
 ## License
 

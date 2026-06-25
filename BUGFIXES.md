@@ -1,4 +1,4 @@
-# Nexis Bugfixes — Phase 0
+# Markify Bugfixes — Phase 0
 
 ## 1. VSB Stack Overflow (Critical)
 

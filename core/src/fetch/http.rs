@@ -2,10 +2,10 @@
 //!
 //! This is the fast path — handles 80% of static pages.
 
-use reqwest::{Client, header::HeaderMap};
+use reqwest::{header::HeaderMap, Client};
 use tracing::debug;
 
-use crate::fetch::{FetchConfig, FetchedPage, default_headers, random_user_agent};
+use crate::fetch::{default_headers, random_user_agent, FetchConfig, FetchedPage};
 use std::time::Duration;
 
 /// HTTP-only page fetcher
@@ -43,7 +43,11 @@ impl HttpFetcher {
     }
 
     /// Fetch a URL and return the HTML content.
-    pub async fn fetch(&self, url: &str, headers: Option<HeaderMap>) -> anyhow::Result<FetchedPage> {
+    pub async fn fetch(
+        &self,
+        url: &str,
+        headers: Option<HeaderMap>,
+    ) -> anyhow::Result<FetchedPage> {
         let mut request = self.client.get(url);
 
         if let Some(extra_headers) = headers {
@@ -51,10 +55,7 @@ impl HttpFetcher {
         }
 
         // Rotate user-agent
-        request = request.header(
-            reqwest::header::USER_AGENT,
-            random_user_agent(),
-        );
+        request = request.header(reqwest::header::USER_AGENT, random_user_agent());
 
         debug!(url = %url, "Fetching page via HTTP");
 

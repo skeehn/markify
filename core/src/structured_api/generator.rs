@@ -13,9 +13,9 @@ use std::time::Instant;
 use scraper::{Html, Selector};
 use uuid::Uuid;
 
-use crate::structured_api::spec::*;
 use crate::scrape::Markify;
-use crate::{ScrapeRequest, OutputFormat, ExtractionMode};
+use crate::structured_api::spec::*;
+use crate::{ExtractionMode, OutputFormat, ScrapeRequest};
 
 /// Generate an API spec from a URL + optional description.
 pub async fn generate_api_spec(
@@ -26,16 +26,20 @@ pub async fn generate_api_spec(
     let start = Instant::now();
 
     // Scrape the page to get HTML
-    let (result, _) = markify.scrape(ScrapeRequest {
-        url: url.to_string(),
-        formats: vec![OutputFormat::Both],
-        mode: ExtractionMode::Full,
-        include_links: true,
-        include_raw_html: true,
-        ..Default::default()
-    }).await?;
+    let (result, _) = markify
+        .scrape(ScrapeRequest {
+            url: url.to_string(),
+            formats: vec![OutputFormat::Both],
+            mode: ExtractionMode::Full,
+            include_links: true,
+            include_raw_html: true,
+            ..Default::default()
+        })
+        .await?;
 
-    let html = result.raw_html.ok_or_else(|| anyhow::anyhow!("No raw HTML available"))?;
+    let html = result
+        .raw_html
+        .ok_or_else(|| anyhow::anyhow!("No raw HTML available"))?;
     let document = Html::parse_document(&html);
 
     // Analyze page structure and generate extraction rules
@@ -193,15 +197,13 @@ fn find_article_content(document: &Html) -> Option<Endpoint> {
 fn find_tables(document: &Html) -> Option<Endpoint> {
     if let Ok(selector) = Selector::parse("table") {
         if document.select(&selector).next().is_some() {
-            let rules = vec![
-                ExtractionRule {
-                    field: "table_data".to_string(),
-                    selector: "table".to_string(),
-                    extract: "html".to_string(),
-                    required: true,
-                    field_type: FieldType::List,
-                },
-            ];
+            let rules = vec![ExtractionRule {
+                field: "table_data".to_string(),
+                selector: "table".to_string(),
+                extract: "html".to_string(),
+                required: true,
+                field_type: FieldType::List,
+            }];
 
             return Some(Endpoint {
                 name: "get_table".to_string(),
@@ -292,10 +294,20 @@ fn extract_item_structure(items: &[scraper::ElementRef]) -> Vec<ExtractionRule> 
 
     // Look for common patterns in the first item
     let patterns = [
-        ("title", "h1, h2, h3, h4, .title, .name", "text", FieldType::String),
+        (
+            "title",
+            "h1, h2, h3, h4, .title, .name",
+            "text",
+            FieldType::String,
+        ),
         ("link", "a", "href", FieldType::Url),
         ("image", "img", "src", FieldType::Url),
-        ("description", "p, .desc, .summary", "text", FieldType::String),
+        (
+            "description",
+            "p, .desc, .summary",
+            "text",
+            FieldType::String,
+        ),
         ("date", "time, .date", "text", FieldType::Date),
         ("price", ".price, .cost, .amount", "text", FieldType::Number),
     ];

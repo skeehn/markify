@@ -1,16 +1,16 @@
 [package]
-name = "nexis-server"
+name = "markify-server"
 version = "0.1.0"
 edition = "2021"
 description = "Markify web data layer server — REST API + MCP"
 license = "Apache-2.0"
 
 [[bin]]
-name = "nexis"
+name = "markify"
 path = "src/main.rs"
 
 [dependencies]
-nexis-core = { path = "../core" }
+markify-core = { path = "../core" }
 
 # Server
 axum = { version = "0.7", features = ["json"] }
@@ -44,7 +44,7 @@ uuid = { version = "1", features = ["v4"] }
 
 [features]
 default = []
-browser = ["nexis-core/browser"]
+browser = ["markify-core/browser"]
 
 [dev-dependencies]
 http-body-util = "0.1"

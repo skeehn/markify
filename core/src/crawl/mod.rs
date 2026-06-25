@@ -4,18 +4,17 @@
 //! Phase 2: Full distributed crawling with URL frontier, bloom filter dedup, robots.txt,
 //!            change detection, checkpointing, and adaptive scheduling.
 
-pub mod frontier;
+pub mod checkpoint;
 pub mod dedup;
+pub mod engine;
+pub mod frontier;
 pub mod politeness;
 pub mod sitemap;
-pub mod checkpoint;
-pub mod engine;
 
 pub use engine::{
-    UrlFrontier, FrontierUrl, UrlPriority, DomainState, FrontierStats,
-    CrawlBloomFilter, CrawlJob as EngineCrawlJob, CrawlJobState, CrawlCheckpoint,
-    ContentFingerprint, ChangeDetectionResult, CrawlEngineConfig,
-    extract_domain, matches_patterns,
+    extract_domain, matches_patterns, ChangeDetectionResult, ContentFingerprint, CrawlBloomFilter,
+    CrawlCheckpoint, CrawlEngineConfig, CrawlJob as EngineCrawlJob, CrawlJobState, DomainState,
+    FrontierStats, FrontierUrl, UrlFrontier, UrlPriority,
 };
 
 use serde::{Deserialize, Serialize};

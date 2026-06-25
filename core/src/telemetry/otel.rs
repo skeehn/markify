@@ -132,7 +132,7 @@ impl OtelObservability {
 
     /// Create with stdout exporter (debug mode)
     pub fn debug_mode() -> Self {
-        Self::new(OtelExporter::Stdout, "nexis", env!("CARGO_PKG_VERSION"))
+        Self::new(OtelExporter::Stdout, "markify", env!("CARGO_PKG_VERSION"))
     }
 
     /// Start a traced operation
@@ -186,10 +186,7 @@ impl OtelObservability {
                 }
                 OtelExporter::Otlp { endpoint } => {
                     // In production, send to OTLP endpoint
-                    debug!(
-                        endpoint = endpoint,
-                        "Would send trace to OTLP endpoint"
-                    );
+                    debug!(endpoint = endpoint, "Would send trace to OTLP endpoint");
                 }
                 OtelExporter::File { path } => {
                     // In production, append to file
@@ -339,7 +336,7 @@ mod tests {
     #[test]
     fn test_metrics_summary() {
         let mut otel = OtelObservability::debug_mode();
-        
+
         // Simulate some metrics
         for i in 0..100 {
             let ctx = TraceContext::new();

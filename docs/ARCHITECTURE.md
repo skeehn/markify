@@ -1,14 +1,14 @@
-# Nexis Architecture
+# Markify Architecture
 
 ## Overview
 
-Nexis is a Rust-native web data layer for AI agents. It provides scraping, search, structured extraction, and crawling — all through a single binary with 25 REST API endpoints and 12 MCP tools.
+Markify is a Rust-native web data layer for AI agents. It provides scraping, search, structured extraction, and crawling — all through a single binary with 25 REST API endpoints and 12 MCP tools.
 
 ## System Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Nexis Server                              │
+│                        Markify Server                              │
 │                                                                  │
 │  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐     │
 │  │  HTTP Fetch │→ │ VSB-Graph     │→ │ Hybrid Search       │     │

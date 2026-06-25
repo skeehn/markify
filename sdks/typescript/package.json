@@ -1,5 +1,5 @@
 {
-  "name": "nexis",
+  "name": "markify",
   "version": "0.1.0",
   "description": "The MIT-licensed web data layer for AI agents",
   "main": "dist/index.js",

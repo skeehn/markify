@@ -144,23 +144,23 @@ pub struct BrowserFingerprint {
 impl BrowserFingerprint {
     /// Generate a realistic Chrome fingerprint
     pub fn chrome() -> Self {
-        let chrome_versions = [
-            "123.0.0.0",
-            "122.0.0.0",
-            "121.0.0.0",
-            "120.0.0.0",
-        ];
-        let platform_versions = [
-            "Windows 10",
-            "Windows 11",
-            "macOS 14.4.1",
-            "macOS 14.3.0",
-        ];
+        let chrome_versions = ["123.0.0.0", "122.0.0.0", "121.0.0.0", "120.0.0.0"];
+        let platform_versions = ["Windows 10", "Windows 11", "macOS 14.4.1", "macOS 14.3.0"];
 
-        let chrome_ver = chrome_versions.choose(&mut rand::thread_rng()).unwrap_or(&chrome_versions[0]);
-        let platform_ver = platform_versions.choose(&mut rand::thread_rng()).unwrap_or(&platform_versions[0]);
+        let chrome_ver = chrome_versions
+            .choose(&mut rand::thread_rng())
+            .unwrap_or(&chrome_versions[0]);
+        let platform_ver = platform_versions
+            .choose(&mut rand::thread_rng())
+            .unwrap_or(&platform_versions[0]);
         let is_mac = platform_ver.contains("macOS");
-        let mobile = if is_mac { "?0" } else { ["?0", "?1"].choose(&mut rand::thread_rng()).unwrap_or(&"?0") };
+        let mobile = if is_mac {
+            "?0"
+        } else {
+            ["?0", "?1"]
+                .choose(&mut rand::thread_rng())
+                .unwrap_or(&"?0")
+        };
 
         Self {
             user_agent: if is_mac {
@@ -168,14 +168,20 @@ impl BrowserFingerprint {
             } else {
                 format!("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{} Safari/537.36", chrome_ver)
             },
-            accept_language: ["en-US,en;q=0.9", "en-GB,en;q=0.9", "en-US,en;q=0.9,fr;q=0.8"]
-                .choose(&mut rand::thread_rng())
-                .unwrap_or(&"en-US,en;q=0.9")
-                .to_string(),
+            accept_language: [
+                "en-US,en;q=0.9",
+                "en-GB,en;q=0.9",
+                "en-US,en;q=0.9,fr;q=0.8",
+            ]
+            .choose(&mut rand::thread_rng())
+            .unwrap_or(&"en-US,en;q=0.9")
+            .to_string(),
             accept_encoding: "gzip, deflate, br, zstd".to_string(),
-            sec_ch_ua: format!(r#""Google Chrome";v="{}", "Chromium";v="{}", "Not/A)Brand";v="24""#, 
+            sec_ch_ua: format!(
+                r#""Google Chrome";v="{}", "Chromium";v="{}", "Not/A)Brand";v="24""#,
                 chrome_ver.split('.').next().unwrap_or("123"),
-                chrome_ver.split('.').next().unwrap_or("123")),
+                chrome_ver.split('.').next().unwrap_or("123")
+            ),
             sec_ch_ua_mobile: mobile.to_string(),
             sec_ch_ua_platform: format!(r#""{}""#, if is_mac { "macOS" } else { "Windows" }),
             sec_fetch_dest: "document".to_string(),
@@ -189,10 +195,15 @@ impl BrowserFingerprint {
     /// Generate a realistic Firefox fingerprint
     pub fn firefox() -> Self {
         let ff_versions = ["124.0", "123.0", "122.0"];
-        let ff_ver = ff_versions.choose(&mut rand::thread_rng()).unwrap_or(&ff_versions[0]);
+        let ff_ver = ff_versions
+            .choose(&mut rand::thread_rng())
+            .unwrap_or(&ff_versions[0]);
 
         Self {
-            user_agent: format!("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:{}) Gecko/20100101 Firefox/{}", ff_ver, ff_ver),
+            user_agent: format!(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:{}) Gecko/20100101 Firefox/{}",
+                ff_ver, ff_ver
+            ),
             accept_language: "en-US,en;q=0.5".to_string(),
             accept_encoding: "gzip, deflate, br".to_string(),
             sec_ch_ua: String::new(),
@@ -272,7 +283,7 @@ impl ProxyPool {
     /// Get the next healthy, non-cooldown proxy
     pub fn get_next(&mut self) -> Option<ProxyEntry> {
         let _lock = self.lock.lock().ok()?;
-        
+
         if self.proxies.is_empty() {
             return None;
         }
@@ -308,9 +319,14 @@ impl ProxyPool {
         for proxy in &mut self.proxies {
             proxy.cooldown_until = None;
         }
-        
-        self.proxies.iter()
-            .max_by(|a, b| a.health_score.partial_cmp(&b.health_score).unwrap_or(std::cmp::Ordering::Equal))
+
+        self.proxies
+            .iter()
+            .max_by(|a, b| {
+                a.health_score
+                    .partial_cmp(&b.health_score)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .cloned()
     }
 
@@ -322,7 +338,11 @@ impl ProxyPool {
             proxy.health_score = calculate_health(proxy.success_count, proxy.failure_count);
             proxy.last_used = Some(Instant::now());
             proxy.cooldown_until = None;
-            debug!(proxy = proxy_address, health = proxy.health_score, "Proxy success reported");
+            debug!(
+                proxy = proxy_address,
+                health = proxy.health_score,
+                "Proxy success reported"
+            );
         }
     }
 
@@ -336,10 +356,10 @@ impl ProxyPool {
 
             // Apply cooldown based on status code
             let cooldown = match status_code {
-                Some(429) => Duration::from_secs(60),   // Rate limited — 1 min
-                Some(403) => Duration::from_secs(300),  // Forbidden — 5 min
-                Some(503) => Duration::from_secs(30),   // Service unavailable — 30s
-                _ => Duration::from_secs(10),            // Other — 10s
+                Some(429) => Duration::from_secs(60),  // Rate limited — 1 min
+                Some(403) => Duration::from_secs(300), // Forbidden — 5 min
+                Some(503) => Duration::from_secs(30),  // Service unavailable — 30s
+                _ => Duration::from_secs(10),          // Other — 10s
             };
 
             proxy.cooldown_until = Some(Instant::now() + cooldown);
@@ -350,8 +370,16 @@ impl ProxyPool {
     /// Get pool stats
     pub fn stats(&self) -> ProxyPoolStats {
         let total = self.proxies.len();
-        let healthy = self.proxies.iter().filter(|p| p.health_score >= self.min_health_score).count();
-        let on_cooldown = self.proxies.iter().filter(|p| p.cooldown_until.map_or(false, |c| Instant::now() < c)).count();
+        let healthy = self
+            .proxies
+            .iter()
+            .filter(|p| p.health_score >= self.min_health_score)
+            .count();
+        let on_cooldown = self
+            .proxies
+            .iter()
+            .filter(|p| p.cooldown_until.is_some_and(|c| Instant::now() < c))
+            .count();
         let residential = self.proxies.iter().filter(|p| p.is_residential).count();
 
         ProxyPoolStats {
@@ -404,12 +432,9 @@ pub struct TwoCaptchaSolver {
 impl TwoCaptchaSolver {
     async fn submit_captcha(&self, params: &[(&str, &str)]) -> anyhow::Result<String> {
         let client = reqwest::Client::new();
-        let mut query = vec![
-            ("key", self.api_key.as_str()),
-            ("json", "1"),
-        ];
+        let mut query = vec![("key", self.api_key.as_str()), ("json", "1")];
         query.extend_from_slice(params);
-        
+
         let response = client
             .get("http://2captcha.com/in.php")
             .query(&query)
@@ -417,11 +442,12 @@ impl TwoCaptchaSolver {
             .await?;
 
         let json: serde_json::Value = response.json().await?;
-        if !json["status"].as_u64().map_or(false, |s| s == 1) {
+        if (json["status"].as_u64() != Some(1)) {
             anyhow::bail!("2Captcha submission failed: {}", json);
         }
 
-        Ok(json["request"].as_str()
+        Ok(json["request"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("No captcha ID returned"))?
             .to_string())
     }
@@ -469,13 +495,15 @@ impl CaptchaSolver for TwoCaptchaSolver {
             .enable_all()
             .build()
             .map_err(|e| anyhow::anyhow!("Failed to create tokio runtime: {}", e))?;
-        
+
         rt.block_on(async {
-            let captcha_id = self.submit_captcha(&[
-                ("method", "userrecaptcha"),
-                ("googlekey", site_key),
-                ("pageurl", page_url),
-            ]).await?;
+            let captcha_id = self
+                .submit_captcha(&[
+                    ("method", "userrecaptcha"),
+                    ("googlekey", site_key),
+                    ("pageurl", page_url),
+                ])
+                .await?;
             self.poll_captcha_result(&captcha_id).await
         })
     }
@@ -485,13 +513,15 @@ impl CaptchaSolver for TwoCaptchaSolver {
             .enable_all()
             .build()
             .map_err(|e| anyhow::anyhow!("Failed to create tokio runtime: {}", e))?;
-        
+
         rt.block_on(async {
-            let captcha_id = self.submit_captcha(&[
-                ("method", "hcaptcha"),
-                ("sitekey", site_key),
-                ("pageurl", page_url),
-            ]).await?;
+            let captcha_id = self
+                .submit_captcha(&[
+                    ("method", "hcaptcha"),
+                    ("sitekey", site_key),
+                    ("pageurl", page_url),
+                ])
+                .await?;
             self.poll_captcha_result(&captcha_id).await
         })
     }
@@ -529,29 +559,32 @@ pub fn detect_bot_protection(html: &str, status_code: u16) -> Option<BotProtecti
     let html_lower = html.to_lowercase();
 
     // Cloudflare
-    if html_lower.contains("cloudflare") || html_lower.contains("__cfduid")
-        || html_lower.contains("cf-browser-verification") || html_lower.contains("cf-chl-bypass")
+    if html_lower.contains("cloudflare")
+        || html_lower.contains("__cfduid")
+        || html_lower.contains("cf-browser-verification")
+        || html_lower.contains("cf-chl-bypass")
         || status_code == 403 && html_lower.contains("checking your browser")
     {
         return Some(BotProtectionType::Cloudflare);
     }
 
     // Akamai
-    if html_lower.contains("akamai") || html_lower.contains("_abck")
-        || html_lower.contains("bm_sz")
+    if html_lower.contains("akamai") || html_lower.contains("_abck") || html_lower.contains("bm_sz")
     {
         return Some(BotProtectionType::Akamai);
     }
 
     // PerimeterX / HUMAN
-    if html_lower.contains("perimeterx") || html_lower.contains("_px")
+    if html_lower.contains("perimeterx")
+        || html_lower.contains("_px")
         || html_lower.contains("human") && html_lower.contains("challenge")
     {
         return Some(BotProtectionType::PerimeterX);
     }
 
     // Distil / Imperva
-    if html_lower.contains("distil") || html_lower.contains("imperva")
+    if html_lower.contains("distil")
+        || html_lower.contains("imperva")
         || html_lower.contains("incapsula")
     {
         return Some(BotProtectionType::Distil);
@@ -679,7 +712,7 @@ mod tests {
     #[test]
     fn test_proxy_pool_rotation() {
         let mut pool = ProxyPool::new(Duration::from_secs(10), 0.5);
-        
+
         pool.add_proxy(ProxyEntry {
             provider: ProviderType::BrightData,
             address: "proxy1.example.com:8080".to_string(),
@@ -722,7 +755,10 @@ mod tests {
     #[test]
     fn test_bot_protection_detection() {
         let cf_html = r#"<html><body><div id="cf-browser-verification"></div></body></html>"#;
-        assert!(matches!(detect_bot_protection(cf_html, 403), Some(BotProtectionType::Cloudflare)));
+        assert!(matches!(
+            detect_bot_protection(cf_html, 403),
+            Some(BotProtectionType::Cloudflare)
+        ));
 
         let clean_html = r#"<html><body><h1>Hello World</h1></body></html>"#;
         assert!(detect_bot_protection(clean_html, 200).is_none());

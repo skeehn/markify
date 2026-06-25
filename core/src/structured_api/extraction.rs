@@ -161,14 +161,16 @@ pub fn generate_program(schema: &ExtractionSchema) -> ExtractionProgram {
 
             let method = match &field.field_type {
                 FieldType::Text => ExtractionMethod::TextContent,
-                FieldType::Url => ExtractionMethod::Attribute { name: "href".to_string() },
+                FieldType::Url => ExtractionMethod::Attribute {
+                    name: "href".to_string(),
+                },
                 FieldType::Number => ExtractionMethod::TextContent,
                 FieldType::Date => ExtractionMethod::TextContent,
                 FieldType::Boolean => ExtractionMethod::TextContent,
                 FieldType::Html => ExtractionMethod::InnerHtml,
-                FieldType::Attribute { attribute } => {
-                    ExtractionMethod::Attribute { name: attribute.clone() }
-                }
+                FieldType::Attribute { attribute } => ExtractionMethod::Attribute {
+                    name: attribute.clone(),
+                },
                 FieldType::Image { .. } => ExtractionMethod::ImageSrc,
             };
 
@@ -204,7 +206,12 @@ pub fn verify_program(program: &ExtractionProgram, html: &str) -> VerificationRe
 
     for step in &program.steps {
         let found = html.contains(&step.selector);
-        if !found && program.steps.iter().any(|s| s.field_name == step.field_name) {
+        if !found
+            && program
+                .steps
+                .iter()
+                .any(|s| s.field_name == step.field_name)
+        {
             // Check if any field is required and not found
             all_passed = false;
         }
@@ -243,7 +250,10 @@ pub struct FieldVerification {
 // ─── Program Execution ──────────────────────────────────────────────────────
 
 /// Execute an extraction program on HTML content
-pub fn execute_program(program: &ExtractionProgram, html: &str) -> anyhow::Result<serde_json::Value> {
+pub fn execute_program(
+    program: &ExtractionProgram,
+    html: &str,
+) -> anyhow::Result<serde_json::Value> {
     let mut result = serde_json::Map::new();
 
     for step in &program.steps {
@@ -269,15 +279,11 @@ fn extract_field(step: &ExtractionStep, html: &str) -> serde_json::Value {
         ExtractionMethod::Attribute { name } => {
             serde_json::Value::String(format!("{}=value", name))
         }
-        ExtractionMethod::InnerHtml => {
-            serde_json::Value::String(format!("<html>...</html>"))
-        }
-        ExtractionMethod::List { item_selector: _ } => {
-            serde_json::Value::Array(vec![
-                serde_json::json!({"item": 1}),
-                serde_json::json!({"item": 2}),
-            ])
-        }
+        ExtractionMethod::InnerHtml => serde_json::Value::String("<html>...</html>".to_string()),
+        ExtractionMethod::List { item_selector: _ } => serde_json::Value::Array(vec![
+            serde_json::json!({"item": 1}),
+            serde_json::json!({"item": 2}),
+        ]),
         ExtractionMethod::ImageSrc => {
             serde_json::Value::String("https://example.com/image.jpg".to_string())
         }
@@ -376,14 +382,12 @@ mod tests {
         let program = ExtractionProgram {
             id: "test".to_string(),
             schema_name: "test".to_string(),
-            steps: vec![
-                ExtractionStep {
-                    field_name: "title".to_string(),
-                    method: ExtractionMethod::TextContent,
-                    selector: "h1".to_string(),
-                    post_process: Some(PostProcess::Trim),
-                },
-            ],
+            steps: vec![ExtractionStep {
+                field_name: "title".to_string(),
+                method: ExtractionMethod::TextContent,
+                selector: "h1".to_string(),
+                post_process: Some(PostProcess::Trim),
+            }],
             verified: false,
             generated_at: chrono::Utc::now(),
         };
@@ -397,7 +401,10 @@ mod tests {
     #[test]
     fn test_detect_pagination() {
         let html_offset = r#"<a href="?page=2">Next</a>"#;
-        assert!(matches!(detect_pagination(html_offset), PaginationType::Offset { .. }));
+        assert!(matches!(
+            detect_pagination(html_offset),
+            PaginationType::Offset { .. }
+        ));
 
         let html_none = r#"<html><body><h1>No pagination</h1></body></html>"#;
         assert!(matches!(detect_pagination(html_none), PaginationType::None));
@@ -408,14 +415,12 @@ mod tests {
         let program = ExtractionProgram {
             id: "test".to_string(),
             schema_name: "test".to_string(),
-            steps: vec![
-                ExtractionStep {
-                    field_name: "title".to_string(),
-                    method: ExtractionMethod::TextContent,
-                    selector: "h1".to_string(),
-                    post_process: None,
-                },
-            ],
+            steps: vec![ExtractionStep {
+                field_name: "title".to_string(),
+                method: ExtractionMethod::TextContent,
+                selector: "h1".to_string(),
+                post_process: None,
+            }],
             verified: true,
             generated_at: chrono::Utc::now(),
         };

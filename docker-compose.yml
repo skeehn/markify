@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  nexis:
+  markify:
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,7 +13,7 @@ services:
       - PORT=3000
       - RUST_LOG=${RUST_LOG:-info}
     volumes:
-      - nexis-data:/data
+      - markify-data:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/v1/health"]
       interval: 30s
@@ -23,4 +23,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  nexis-data:
+  markify-data:

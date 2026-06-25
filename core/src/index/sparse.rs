@@ -11,11 +11,11 @@ use std::sync::Mutex;
 
 use tantivy::{
     collector::TopDocs,
-    doc,
     directory::MmapDirectory,
-    query::{QueryParser, BoostQuery},
-    schema::{Schema, TEXT, STORED, STRING, FAST},
-    Index, TantivyDocument, Document,
+    doc,
+    query::{BoostQuery, QueryParser},
+    schema::{Schema, FAST, STORED, STRING, TEXT},
+    Document, Index, TantivyDocument,
 };
 use tracing::debug;
 
@@ -52,10 +52,22 @@ pub struct FieldBoost {
 
 /// Default field boosts — tuned empirically
 const FIELD_BOOSTS: &[FieldBoost] = &[
-    FieldBoost { field_name: "title", boost: 3.0 },
-    FieldBoost { field_name: "headers", boost: 2.0 },
-    FieldBoost { field_name: "body", boost: 1.0 },
-    FieldBoost { field_name: "metadata", boost: 1.5 },
+    FieldBoost {
+        field_name: "title",
+        boost: 3.0,
+    },
+    FieldBoost {
+        field_name: "headers",
+        boost: 2.0,
+    },
+    FieldBoost {
+        field_name: "body",
+        boost: 1.0,
+    },
+    FieldBoost {
+        field_name: "metadata",
+        boost: 1.5,
+    },
 ];
 
 /// Schema fields
@@ -84,7 +96,14 @@ fn build_schema() -> (Schema, Fields) {
 
     let schema = builder.build();
     let fields = Fields {
-        block_id, url, title, headers, body, metadata, block_type, indexed_at,
+        block_id,
+        url,
+        title,
+        headers,
+        body,
+        metadata,
+        block_type,
+        indexed_at,
     };
     (schema, fields)
 }
@@ -132,7 +151,7 @@ impl SparseIndex {
     }
 
     /// Index a single content block with fielded boosts.
-    /// 
+    ///
     /// # Arguments
     /// * `block_id` — unique identifier for the block
     /// * `url` — source URL
@@ -170,7 +189,11 @@ impl SparseIndex {
             *count += 1;
         }
 
-        debug!(block_id, body_len = body.len(), "Indexed block with fielded boosts");
+        debug!(
+            block_id,
+            body_len = body.len(),
+            "Indexed block with fielded boosts"
+        );
         Ok(())
     }
 
@@ -222,7 +245,12 @@ impl SparseIndex {
         if boosted_subqueries.is_empty() {
             let qp = QueryParser::for_index(
                 &self.index,
-                vec![self.fields.title, self.fields.headers, self.fields.body, self.fields.metadata],
+                vec![
+                    self.fields.title,
+                    self.fields.headers,
+                    self.fields.body,
+                    self.fields.metadata,
+                ],
             );
             if let Ok(query) = qp.parse_query(query_str) {
                 return query;
@@ -231,10 +259,8 @@ impl SparseIndex {
 
         // Combine with additive scoring (sum of boosted subqueries)
         // This gives us DisjunctionMax-like behavior with proper boosting
-        let mut queries: Vec<Box<dyn Query>> = boosted_subqueries
-            .into_iter()
-            .map(|(q, _)| q)
-            .collect();
+        let mut queries: Vec<Box<dyn Query>> =
+            boosted_subqueries.into_iter().map(|(q, _)| q).collect();
 
         if queries.len() == 1 {
             return queries.pop().unwrap();
@@ -273,7 +299,11 @@ impl SparseIndex {
             let block_type = extract_str(&json, "block_type");
 
             // Use body for snippet (prefer body, fall back to title)
-            let snippet_text = if !body.is_empty() { body } else { title.clone() };
+            let snippet_text = if !body.is_empty() {
+                body
+            } else {
+                title.clone()
+            };
             let snippet = if snippet_text.len() > 200 {
                 format!("{}...", &snippet_text[..200])
             } else {
@@ -291,7 +321,11 @@ impl SparseIndex {
             });
         }
 
-        debug!(query, results = results.len(), "BM25 fielded search complete");
+        debug!(
+            query,
+            results = results.len(),
+            "BM25 fielded search complete"
+        );
         Ok(results)
     }
 

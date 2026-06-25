@@ -8,8 +8,8 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use scraper::{Html, Selector, ElementRef, Node};
-use sha2::{Sha256, Digest};
+use scraper::{ElementRef, Html, Node, Selector};
+use sha2::{Digest, Sha256};
 
 use crate::vsb_graph::types::*;
 
@@ -94,7 +94,14 @@ fn find_top_level_regions(document: &Html) -> Vec<ElementRef<'_>> {
 
     // Priority 2: Common content containers by class
     if regions.is_empty() {
-        let class_patterns = ["content", "article", "post", "main-content", "entry", "body"];
+        let class_patterns = [
+            "content",
+            "article",
+            "post",
+            "main-content",
+            "entry",
+            "body",
+        ];
         for pattern in &class_patterns {
             let sel_str = format!(".{}", pattern);
             let sel = Selector::parse(&sel_str);
@@ -309,11 +316,7 @@ fn analyze_element_recursive(
 /// schema.org microdata, and DOM context to assign a BlockType + SemanticRole.
 fn classify_element_type(element: &ElementRef) -> (BlockType, SemanticRole) {
     let tag = element.value().name();
-    let classes = element
-        .value()
-        .attr("class")
-        .unwrap_or("")
-        .to_lowercase();
+    let classes = element.value().attr("class").unwrap_or("").to_lowercase();
     let id_attr = element.value().attr("id").unwrap_or("").to_lowercase();
     let role_attr = element.value().attr("role").unwrap_or("").to_lowercase();
     let text = element.text().collect::<String>();
@@ -357,7 +360,9 @@ fn classify_element_type(element: &ElementRef) -> (BlockType, SemanticRole) {
     if classes.contains("pagination")
         || id_attr.contains("pagination")
         || role_attr.contains("pagination")
-        || (text_lower.contains("page") && text_lower.contains("next") && text_lower.contains("prev"))
+        || (text_lower.contains("page")
+            && text_lower.contains("next")
+            && text_lower.contains("prev"))
     {
         return (BlockType::Pagination, SemanticRole::Navigation);
     }
@@ -643,7 +648,8 @@ fn classify_element_type(element: &ElementRef) -> (BlockType, SemanticRole) {
         || classes.contains("entry-content")
         || classes.contains("mw-parser-output")  // Wikipedia
         || id_attr.contains("content")
-        || id_attr.contains("bodyContent")       // Wikipedia
+        || id_attr.contains("bodyContent")
+    // Wikipedia
     {
         return (BlockType::Article, SemanticRole::PrimaryContent);
     }
@@ -664,7 +670,9 @@ fn classify_element_type(element: &ElementRef) -> (BlockType, SemanticRole) {
     if classes.contains("api-doc")
         || classes.contains("endpoint")
         || id_attr.contains("api-doc")
-        || (text_lower.contains("get /") || text_lower.contains("post /") || text_lower.contains("put /"))
+        || (text_lower.contains("get /")
+            || text_lower.contains("post /")
+            || text_lower.contains("put /"))
     {
         return (BlockType::APIDocumentation, SemanticRole::PrimaryContent);
     }
@@ -695,14 +703,19 @@ fn classify_element_type(element: &ElementRef) -> (BlockType, SemanticRole) {
     }
     if tag == "iframe" {
         let src = element.value().attr("src").unwrap_or("");
-        if src.contains("youtube") || src.contains("vimeo") || src.contains("spotify")
-            || src.contains("soundcloud") || src.contains("wistia")
+        if src.contains("youtube")
+            || src.contains("vimeo")
+            || src.contains("spotify")
+            || src.contains("soundcloud")
+            || src.contains("wistia")
         {
             return (BlockType::Media, SemanticRole::PrimaryContent);
         }
     }
-    if classes.contains("video-embed") || classes.contains("media-player")
-        || id_attr.contains("video") || id_attr.contains("media")
+    if classes.contains("video-embed")
+        || classes.contains("media-player")
+        || id_attr.contains("video")
+        || id_attr.contains("media")
     {
         return (BlockType::Media, SemanticRole::PrimaryContent);
     }
@@ -734,7 +747,11 @@ fn classify_element_type(element: &ElementRef) -> (BlockType, SemanticRole) {
         if let Some(parent_node) = element.parent() {
             if let Some(parent_elem) = ElementRef::wrap(parent_node) {
                 let parent_tag = parent_elem.value().name();
-                let parent_classes = parent_elem.value().attr("class").unwrap_or("").to_lowercase();
+                let parent_classes = parent_elem
+                    .value()
+                    .attr("class")
+                    .unwrap_or("")
+                    .to_lowercase();
                 if parent_tag == "article"
                     || parent_tag == "main"
                     || parent_classes.contains("content")
@@ -797,16 +814,15 @@ fn infer_ancestor_role(element: &ElementRef) -> SemanticRole {
                     | BlockType::Pagination
                     | BlockType::TableOfContents => return SemanticRole::Navigation,
                     BlockType::Header | BlockType::Footer => return SemanticRole::Structural,
-                    BlockType::Sidebar
-                    | BlockType::Testimonial
-                    | BlockType::UserProfile => return SemanticRole::SupportingContent,
-                    BlockType::Advertisement
-                    | BlockType::Pricing
-                    | BlockType::ProductCard => return SemanticRole::Commercial,
-                    BlockType::Comment
-                    | BlockType::Review
-                    | BlockType::Feed
-                    | BlockType::Forum => return SemanticRole::UserGenerated,
+                    BlockType::Sidebar | BlockType::Testimonial | BlockType::UserProfile => {
+                        return SemanticRole::SupportingContent
+                    }
+                    BlockType::Advertisement | BlockType::Pricing | BlockType::ProductCard => {
+                        return SemanticRole::Commercial
+                    }
+                    BlockType::Comment | BlockType::Review | BlockType::Feed | BlockType::Forum => {
+                        return SemanticRole::UserGenerated
+                    }
                     BlockType::Search
                     | BlockType::Form
                     | BlockType::Login
@@ -824,7 +840,11 @@ fn infer_ancestor_role(element: &ElementRef) -> SemanticRole {
                 }
 
                 // Check parent class names for context
-                let parent_classes = parent_elem.value().attr("class").unwrap_or("").to_lowercase();
+                let parent_classes = parent_elem
+                    .value()
+                    .attr("class")
+                    .unwrap_or("")
+                    .to_lowercase();
                 let parent_id = parent_elem.value().attr("id").unwrap_or("").to_lowercase();
 
                 if parent_classes.contains("content")
@@ -836,15 +856,11 @@ fn infer_ancestor_role(element: &ElementRef) -> SemanticRole {
                     return SemanticRole::PrimaryContent;
                 }
 
-                if parent_classes.contains("nav")
-                    || parent_classes.contains("menu")
-                {
+                if parent_classes.contains("nav") || parent_classes.contains("menu") {
                     return SemanticRole::Navigation;
                 }
 
-                if parent_classes.contains("sidebar")
-                    || parent_classes.contains("widget")
-                {
+                if parent_classes.contains("sidebar") || parent_classes.contains("widget") {
                     return SemanticRole::SupportingContent;
                 }
 
@@ -889,7 +905,11 @@ fn quick_boilerplate_check(element: &ElementRef, text: &str) -> (bool, f64) {
 
     // Dimension 2: Density — boilerplate has low text-to-HTML ratio
     let html_len = element.html().len();
-    let density = if html_len > 0 { text_len as f64 / html_len as f64 } else { 0.0 };
+    let density = if html_len > 0 {
+        text_len as f64 / html_len as f64
+    } else {
+        0.0
+    };
     let density_score = if density < 0.1 { 0.8 } else { 0.2 };
 
     // Dimension 3: Link ratio — boilerplate is link-heavy
@@ -942,8 +962,18 @@ fn is_structural_element(element: &ElementRef) -> bool {
     let tag = element.value().name();
     matches!(
         tag,
-        "div" | "section" | "article" | "main" | "header" | "footer" | "nav" | "aside" | "ul"
-            | "ol" | "table" | "form"
+        "div"
+            | "section"
+            | "article"
+            | "main"
+            | "header"
+            | "footer"
+            | "nav"
+            | "aside"
+            | "ul"
+            | "ol"
+            | "table"
+            | "form"
     )
 }
 
@@ -1134,7 +1164,9 @@ fn extract_links_from_element(element: &ElementRef, base_url: &str) -> Vec<Block
                 let resolved = if href.starts_with("http") {
                     href.to_string()
                 } else if let Ok(base) = url::Url::parse(base_url) {
-                    base.join(href).map(|u| u.to_string()).unwrap_or(href.to_string())
+                    base.join(href)
+                        .map(|u| u.to_string())
+                        .unwrap_or(href.to_string())
                 } else {
                     href.to_string()
                 };

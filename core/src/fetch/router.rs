@@ -2,7 +2,7 @@
 
 use tracing::{debug, info};
 
-use crate::fetch::{FetchConfig, FetchedPage, HttpFetcher, browser::BrowserFetcher};
+use crate::fetch::{browser::BrowserFetcher, FetchConfig, FetchedPage, HttpFetcher};
 
 /// Which engine handled the request
 #[derive(Debug, Clone)]

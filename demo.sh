@@ -8,7 +8,7 @@
 
 set -e
 
-API_URL="${NEXIS_API_URL:-http://localhost:8080}"
+API_URL="${MARKIFY_API_URL:-http://localhost:8080}"
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
@@ -123,11 +123,11 @@ echo ""
 echo "  ✅ Scrape any URL → clean Markdown in <300ms"
 echo "  ✅ Search + scrape results in ONE API call"
 echo "  ✅ 3 lines of Python → structured web data"
-echo "  ✅ MIT-licensed (vs Firecrawl AGPL)"
+echo "  ✅ Apache-2.0 licensed (vs Firecrawl AGPL)"
 echo "  ✅ Single binary (vs Firecrawl Docker compose)"
 echo "  ✅ MCP-first (Claude, Cursor, Windsurf)"
 echo "  ✅ Rust-native (5-6KB memory, 10x faster than Python)"
 echo ""
-echo "  nexis.dev | github.com/nexis/markify"
+echo "  markify.dev | github.com/skeehn/markify"
 echo ""
 echo "============================================================"

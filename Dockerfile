@@ -28,5 +28,5 @@ EXPOSE 3000
 
 ENV RUST_LOG=info
 
-ENTRYPOINT ["nexis"]
+ENTRYPOINT ["markify"]
 CMD ["server"]

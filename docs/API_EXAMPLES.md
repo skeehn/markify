@@ -1,4 +1,4 @@
-# Nexis API Examples
+# Markify API Examples
 
 Examples for all 25 endpoints in curl, Python, TypeScript, and Go.
 
@@ -21,24 +21,24 @@ curl -X POST http://localhost:3000/v1/scrape \
 
 **Python:**
 ```python
-from nexis import Nexis
-client = Nexis(base_url="http://localhost:3000")
+from markify import Markify
+client = Markify(base_url="http://localhost:3000")
 result = client.scrape("https://example.com", mode="smart")
 print(result.markdown[:500])
 ```
 
 **TypeScript:**
 ```typescript
-import { Nexis } from 'nexis';
-const client = new Nexis({ baseUrl: 'http://localhost:3000' });
+import { Markify } from 'markify';
+const client = new Markify({ baseUrl: 'http://localhost:3000' });
 const result = await client.scrape('https://example.com');
 console.log(result.markdown);
 ```
 
 **Go:**
 ```go
-client := nexis.New(nexis.WithBaseURL("http://localhost:3000"))
-result, err := client.Scrape(context.Background(), "https://example.com", nexis.ScrapeOptions{Mode: "smart"})
+client := markify.New(markify.WithBaseURL("http://localhost:3000"))
+result, err := client.Scrape(context.Background(), "https://example.com", markify.ScrapeOptions{Mode: "smart"})
 fmt.Println(result.Markdown)
 ```
 
@@ -259,7 +259,7 @@ Response:
 ```json
 {
   "status": "ok",
-  "service": "nexis",
+  "service": "markify",
   "version": "0.1.0",
   "telemetry": {
     "requests": { "total": 150, "success": 148, "errors": 2 },

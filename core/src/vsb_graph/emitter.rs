@@ -167,10 +167,7 @@ fn render_block(block: &VSBBlock, graph: &VSBGraph, md: &mut String, depth: usiz
         BlockType::Sidebar => {
             // Skip sidebars unless explicitly requested
         }
-        BlockType::Search
-        | BlockType::Form
-        | BlockType::Login
-        | BlockType::Filter => {
+        BlockType::Search | BlockType::Form | BlockType::Login | BlockType::Filter => {
             // Interactive elements — render summary only
             if !block.text.is_empty() {
                 md.push_str(&format!("[{}]\n\n", block.block_type.block_type_label()));

@@ -4,9 +4,9 @@ use std::time::Instant;
 
 use scraper::{Html, Selector};
 
-use crate::structured_api::spec::*;
 use crate::scrape::Markify;
-use crate::{ScrapeRequest, OutputFormat, ExtractionMode};
+use crate::structured_api::spec::*;
+use crate::{ExtractionMode, OutputFormat, ScrapeRequest};
 
 /// Execute an API spec against a URL.
 pub async fn execute_api_spec(
@@ -27,15 +27,19 @@ pub async fn execute_api_spec(
         .ok_or_else(|| anyhow::anyhow!("Endpoint '{}' not found in API spec", endpoint_name))?;
 
     // Scrape the page
-    let (result, _) = markify.scrape(ScrapeRequest {
-        url: url.to_string(),
-        formats: vec![OutputFormat::Both],
-        mode: ExtractionMode::Full,
-        include_raw_html: true,
-        ..Default::default()
-    }).await?;
+    let (result, _) = markify
+        .scrape(ScrapeRequest {
+            url: url.to_string(),
+            formats: vec![OutputFormat::Both],
+            mode: ExtractionMode::Full,
+            include_raw_html: true,
+            ..Default::default()
+        })
+        .await?;
 
-    let html = result.raw_html.ok_or_else(|| anyhow::anyhow!("No raw HTML available"))?;
+    let html = result
+        .raw_html
+        .ok_or_else(|| anyhow::anyhow!("No raw HTML available"))?;
     let document = Html::parse_document(&html);
 
     // Execute extraction rules
@@ -143,18 +147,14 @@ fn extract_from_element(
                 Some(serde_json::Value::String(text))
             }
         }
-        "href" => {
-            element
-                .value()
-                .attr("href")
-                .map(|v| serde_json::Value::String(v.to_string()))
-        }
-        "src" => {
-            element
-                .value()
-                .attr("src")
-                .map(|v| serde_json::Value::String(v.to_string()))
-        }
+        "href" => element
+            .value()
+            .attr("href")
+            .map(|v| serde_json::Value::String(v.to_string())),
+        "src" => element
+            .value()
+            .attr("src")
+            .map(|v| serde_json::Value::String(v.to_string())),
         "html" => {
             let html = element.html();
             if html.is_empty() {

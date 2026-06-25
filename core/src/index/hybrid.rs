@@ -8,8 +8,8 @@
 
 use std::collections::HashMap;
 
-use crate::index::sparse::{SparseIndex, SparseSearchResult as Bm25Result};
 use crate::index::dense::{DenseIndex, DenseSearchResult as DenseResult};
+use crate::index::sparse::{SparseIndex, SparseSearchResult as Bm25Result};
 
 /// Hybrid search result with scores from both retrievers
 #[derive(Debug, Clone, serde::Serialize)]
@@ -74,9 +74,10 @@ pub fn reciprocal_rank_fusion(
     // Process BM25 results
     for (rank, result) in bm25_results.iter().enumerate() {
         let rrf_score = config.bm25_weight / (config.k + rank as f64);
-        
-        let entry = results_map.entry(result.block_id.clone()).or_insert_with(|| {
-            HybridSearchResult {
+
+        let entry = results_map
+            .entry(result.block_id.clone())
+            .or_insert_with(|| HybridSearchResult {
                 block_id: result.block_id.clone(),
                 url: result.url.clone(),
                 title: result.title.clone(),
@@ -87,8 +88,7 @@ pub fn reciprocal_rank_fusion(
                 bm25_rank: None,
                 dense_similarity: None,
                 dense_rank: None,
-            }
-        });
+            });
 
         entry.hybrid_score += rrf_score;
         entry.bm25_score = Some(result.score);
@@ -98,9 +98,10 @@ pub fn reciprocal_rank_fusion(
     // Process dense results
     for (rank, result) in dense_results.iter().enumerate() {
         let rrf_score = config.dense_weight / (config.k + rank as f64);
-        
-        let entry = results_map.entry(result.block_id.clone()).or_insert_with(|| {
-            HybridSearchResult {
+
+        let entry = results_map
+            .entry(result.block_id.clone())
+            .or_insert_with(|| HybridSearchResult {
                 block_id: result.block_id.clone(),
                 url: result.url.clone(),
                 title: result.title.clone(),
@@ -111,8 +112,7 @@ pub fn reciprocal_rank_fusion(
                 bm25_rank: None,
                 dense_similarity: None,
                 dense_rank: None,
-            }
-        });
+            });
 
         entry.hybrid_score += rrf_score;
         entry.dense_similarity = Some(result.similarity);
@@ -121,7 +121,11 @@ pub fn reciprocal_rank_fusion(
 
     // Sort by hybrid score descending
     let mut results: Vec<HybridSearchResult> = results_map.into_values().collect();
-    results.sort_by(|a, b| b.hybrid_score.partial_cmp(&a.hybrid_score).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.hybrid_score
+            .partial_cmp(&a.hybrid_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     // Truncate to limit
     results.truncate(config.limit);
@@ -144,7 +148,11 @@ impl HybridSearcher {
     }
 
     /// Search using both BM25 and dense, then fuse with RRF
-    pub fn search(&self, query: &str, config: &RrfConfig) -> anyhow::Result<Vec<HybridSearchResult>> {
+    pub fn search(
+        &self,
+        query: &str,
+        config: &RrfConfig,
+    ) -> anyhow::Result<Vec<HybridSearchResult>> {
         // Run both searches in parallel conceptually (sequentially here)
         let bm25_results = self.sparse_index.search(query, config.limit)?;
         let dense_results = self.dense_index.search(query, config.limit);
@@ -156,11 +164,17 @@ impl HybridSearcher {
     }
 
     /// Search using BM25 only
-    pub fn search_bm25_only(&self, query: &str, limit: usize) -> anyhow::Result<Vec<HybridSearchResult>> {
+    pub fn search_bm25_only(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> anyhow::Result<Vec<HybridSearchResult>> {
         let bm25_results = self.sparse_index.search(query, limit)?;
-        
-        Ok(bm25_results.into_iter().enumerate().map(|(rank, r)| {
-            HybridSearchResult {
+
+        Ok(bm25_results
+            .into_iter()
+            .enumerate()
+            .map(|(rank, r)| HybridSearchResult {
                 block_id: r.block_id,
                 url: r.url,
                 title: r.title,
@@ -171,16 +185,18 @@ impl HybridSearcher {
                 bm25_rank: Some(rank + 1),
                 dense_similarity: None,
                 dense_rank: None,
-            }
-        }).collect())
+            })
+            .collect())
     }
 
     /// Search using dense only
     pub fn search_dense_only(&self, query: &str, limit: usize) -> Vec<HybridSearchResult> {
         let dense_results = self.dense_index.search(query, limit);
-        
-        dense_results.into_iter().enumerate().map(|(rank, r)| {
-            HybridSearchResult {
+
+        dense_results
+            .into_iter()
+            .enumerate()
+            .map(|(rank, r)| HybridSearchResult {
                 block_id: r.block_id,
                 url: r.url,
                 title: r.title,
@@ -191,8 +207,8 @@ impl HybridSearcher {
                 bm25_rank: None,
                 dense_similarity: Some(r.similarity),
                 dense_rank: Some(rank + 1),
-            }
-        }).collect()
+            })
+            .collect()
     }
 }
 
@@ -225,14 +241,8 @@ mod tests {
 
     #[test]
     fn test_rrf_fusion_no_overlap() {
-        let bm25 = vec![
-            make_bm25_result("a", 10.0),
-            make_bm25_result("b", 8.0),
-        ];
-        let dense = vec![
-            make_dense_result("c", 0.9),
-            make_dense_result("d", 0.8),
-        ];
+        let bm25 = vec![make_bm25_result("a", 10.0), make_bm25_result("b", 8.0)];
+        let dense = vec![make_dense_result("c", 0.9), make_dense_result("d", 0.8)];
 
         let config = RrfConfig::default();
         let results = reciprocal_rank_fusion(bm25, dense, &config);
@@ -244,10 +254,7 @@ mod tests {
 
     #[test]
     fn test_rrf_fusion_with_overlap() {
-        let bm25 = vec![
-            make_bm25_result("a", 10.0),
-            make_bm25_result("b", 8.0),
-        ];
+        let bm25 = vec![make_bm25_result("a", 10.0), make_bm25_result("b", 8.0)];
         let dense = vec![
             make_dense_result("a", 0.9), // "a" in both
             make_dense_result("c", 0.8),
@@ -265,10 +272,7 @@ mod tests {
 
     #[test]
     fn test_rrf_ranking_order() {
-        let bm25 = vec![
-            make_bm25_result("top", 15.0),
-            make_bm25_result("mid", 10.0),
-        ];
+        let bm25 = vec![make_bm25_result("top", 15.0), make_bm25_result("mid", 10.0)];
         let dense = vec![
             make_dense_result("top", 0.95),
             make_dense_result("mid", 0.85),

@@ -22,10 +22,10 @@ That's it. One binary, no dependencies, no runtime.
 
 ```bash
 # Build
-docker build -t nexis/nexis .
+docker build -t skeehn/markify .
 
 # Run
-docker run -p 3000:3000 -e SERPER_API_KEY=xxx nexis/nexis
+docker run -p 3000:3000 -e SERPER_API_KEY=xxx skeehn/markify
 
 # Or with docker-compose
 SERPER_API_KEY=xxx docker-compose up -d
@@ -73,7 +73,7 @@ spec:
     spec:
       containers:
       - name: markify
-        image: nexis/nexis:latest
+        image: skeehn/markify:latest
         ports:
         - containerPort: 3000
         env:
@@ -181,7 +181,7 @@ git pull
 cargo build --release
 
 # Docker
-docker pull nexis/nexis:latest
+docker pull skeehn/markify:latest
 docker-compose up -d --force-recreate
 
 # Fly.io

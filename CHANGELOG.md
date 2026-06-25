@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Nexis will be documented in this file.
+All notable changes to Markify will be documented in this file.
 
 ## [0.1.0] — 2026-04-09
 

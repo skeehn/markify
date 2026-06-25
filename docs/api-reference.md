@@ -175,7 +175,7 @@ Health check with cache stats.
 ```json
 {
   "status": "ok",
-  "service": "nexis",
+  "service": "markify",
   "version": "0.1.0",
   "cache": "Cache { entries: 0, size: 0 }"
 }

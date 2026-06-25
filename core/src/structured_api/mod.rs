@@ -11,11 +11,11 @@
 //!
 //! Phase 2: Hybrid structured extraction with schema + LLM modes.
 
-pub mod generator;
 pub mod executor;
-pub mod spec;
 pub mod extraction;
+pub mod generator;
+pub mod spec;
 
-pub use generator::generate_api_spec;
 pub use executor::execute_api_spec;
+pub use generator::generate_api_spec;
 pub use spec::*;

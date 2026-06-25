@@ -3,11 +3,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "nexis"
+name = "markify"
 version = "0.1.0"
-description = "The MIT-licensed web data layer for AI agents"
+description = "The Apache-2.0-licensed web data layer for AI agents"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
     { name = "Markify" },
@@ -25,8 +25,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nexis/markify"
-Repository = "https://github.com/nexis/markify"
+Homepage = "https://github.com/skeehn/markify"
+Repository = "https://github.com/skeehn/markify"
 
 [tool.ruff]
 line-length = 100

@@ -1,3 +1,3 @@
-module github.com/skeehn/nexis/sdks/go
+module github.com/skeehn/markify/sdks/go
 
 go 1.21

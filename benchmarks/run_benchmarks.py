@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Nexis Benchmark Tool — Full E2E Comparison vs Firecrawl, Jina, Parse.bot, Spider
+Markify Benchmark Tool — Full E2E Comparison vs Firecrawl, Jina, Parse.bot, Spider
 
-Compares Nexis against competitors on:
+Compares Markify against competitors on:
 1. URL Scraping latency + content quality
 2. Web Search latency + result quality
-3. VSB-Graph structured blocks (Nexis exclusive)
+3. VSB-Graph structured blocks (Markify exclusive)
 4. Feature matrix comparison
 
 Usage:
@@ -13,7 +13,7 @@ Usage:
     python benchmarks/run_benchmarks.py --output benchmark-report.md
 
 Requires:
-    NEXIS_API_URL (default: http://localhost:8080)
+    MARKIFY_API_URL (default: http://localhost:8080)
     FIRECRAWL_API_KEY (optional)
     JINA_API_KEY (optional)
 """
@@ -59,16 +59,16 @@ SEARCH_QUERIES = [
 @dataclass
 class ScrapeResult:
     url: str
-    nexis_ms: Optional[float] = None
+    markify_ms: Optional[float] = None
     firecrawl_ms: Optional[float] = None
     jina_ms: Optional[float] = None
-    nexis_content_len: int = 0
+    markify_content_len: int = 0
     firecrawl_content_len: int = 0
     jina_content_len: int = 0
-    nexis_status: str = "N/A"
+    markify_status: str = "N/A"
     firecrawl_status: str = "N/A"
     jina_status: str = "N/A"
-    nexis_engine: str = ""
+    markify_engine: str = ""
     error: Optional[str] = None
 
 
@@ -80,11 +80,11 @@ class VSBResult:
     boilerplate_blocks: int = 0
     block_types_used: int = 0
     classification_pct: float = 0.0
-    nexis_ms: Optional[float] = None
+    markify_ms: Optional[float] = None
     error: Optional[str] = None
 
 
-def scrape_nexis(url: str, api_url: str, timeout: float = 30) -> tuple:
+def scrape_markify(url: str, api_url: str, timeout: float = 30) -> tuple:
     start = time.time()
     try:
         resp = httpx.post(
@@ -140,7 +140,7 @@ def scrape_jina(url: str, api_key: str, timeout: float = 30) -> tuple:
         return (time.time() - start) * 1000, 0, "", str(e)
 
 
-def vsb_nexis(url: str, api_url: str, timeout: float = 30) -> VSBResult:
+def vsb_markify(url: str, api_url: str, timeout: float = 30) -> VSBResult:
     start = time.time()
     result = VSBResult(url=url)
     try:
@@ -149,7 +149,7 @@ def vsb_nexis(url: str, api_url: str, timeout: float = 30) -> VSBResult:
             json={"url": url, "format": "json"},
             timeout=timeout,
         )
-        result.nexis_ms = (time.time() - start) * 1000
+        result.markify_ms = (time.time() - start) * 1000
         data = resp.json()
         if data.get("success"):
             graph = data.get("graph", {})
@@ -159,12 +159,12 @@ def vsb_nexis(url: str, api_url: str, timeout: float = 30) -> VSBResult:
         else:
             result.error = data.get("error", "Unknown")
     except Exception as e:
-        result.nexis_ms = (time.time() - start) * 1000
+        result.markify_ms = (time.time() - start) * 1000
         result.error = str(e)
     return result
 
 
-def search_nexis(query: str, api_url: str, timeout: float = 30) -> tuple:
+def search_markify(query: str, api_url: str, timeout: float = 30) -> tuple:
     start = time.time()
     try:
         resp = httpx.post(
@@ -207,64 +207,64 @@ def generate_feature_matrix() -> str:
     ]
 
     lines = []
-    lines.append("| Feature | **Nexis** | Firecrawl | Jina Reader | Parse.bot | Spider |")
+    lines.append("| Feature | **Markify** | Firecrawl | Jina Reader | Parse.bot | Spider |")
     lines.append("|---------|-----------|-----------|-------------|-----------|--------|")
-    for feat, nexis, fc, jina, pb, spider in features:
-        lines.append(f"| {feat} | **{nexis}** | {fc} | {jina} | {pb} | {spider} |")
+    for feat, markify, fc, jina, pb, spider in features:
+        lines.append(f"| {feat} | **{markify}** | {fc} | {jina} | {pb} | {spider} |")
 
     return "\n".join(lines)
 
 
 def generate_report(scrape_results: list, vsb_results: list, search_results: list) -> str:
     lines = []
-    lines.append("# Nexis 2.0 — Comprehensive Benchmark Report")
+    lines.append("# Markify 2.0 — Comprehensive Benchmark Report")
     lines.append("")
     lines.append(f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    lines.append(f"Nexis Version: 0.1.0 (Rust/Axum)")
+    lines.append(f"Markify Version: 0.1.0 (Rust/Axum)")
     lines.append("")
 
     # Executive Summary
     lines.append("## Executive Summary")
     lines.append("")
-    nexis_times = [r.nexis_ms for r in scrape_results if r.nexis_ms and r.nexis_status == "OK"]
+    markify_times = [r.markify_ms for r in scrape_results if r.markify_ms and r.markify_status == "OK"]
     fc_times = [r.firecrawl_ms for r in scrape_results if r.firecrawl_ms and r.firecrawl_status == "OK"]
     jina_times = [r.jina_ms for r in scrape_results if r.jina_ms and r.jina_status == "OK"]
 
-    lines.append("Nexis delivers **VSB-Graph structured extraction**, **hybrid BM25+HNSW search with RRF fusion**, ")
+    lines.append("Markify delivers **VSB-Graph structured extraction**, **hybrid BM25+HNSW search with RRF fusion**, ")
     lines.append("**ML-powered block classification**, **distributed crawling**, and **12 MCP tools** — all in a ")
     lines.append("single MIT-licensed Rust binary using ~6KB memory.")
     lines.append("")
 
-    if nexis_times and fc_times:
-        avg_nexis = sum(nexis_times) / len(nexis_times)
+    if markify_times and fc_times:
+        avg_markify = sum(markify_times) / len(markify_times)
         avg_fc = sum(fc_times) / len(fc_times)
-        lines.append(f"- **vs Firecrawl**: Nexis is {avg_fc/avg_nexis:.1f}x faster on average ({avg_nexis:.0f}ms vs {avg_fc:.0f}ms)")
-    if nexis_times and jina_times:
+        lines.append(f"- **vs Firecrawl**: Markify is {avg_fc/avg_markify:.1f}x faster on average ({avg_markify:.0f}ms vs {avg_fc:.0f}ms)")
+    if markify_times and jina_times:
         avg_jina = sum(jina_times) / len(jina_times)
-        lines.append(f"- **vs Jina**: Nexis is {avg_jina/avg_nexis:.1f}x faster on average ({avg_nexis:.0f}ms vs {avg_jina:.0f}ms)")
+        lines.append(f"- **vs Jina**: Markify is {avg_jina/avg_markify:.1f}x faster on average ({avg_markify:.0f}ms vs {avg_jina:.0f}ms)")
     lines.append("")
 
     # Scrape benchmarks
     lines.append("## URL Scraping Performance")
     lines.append("")
-    lines.append("| URL | Nexis (ms) | Firecrawl (ms) | Jina (ms) | Nexis Content |")
+    lines.append("| URL | Markify (ms) | Firecrawl (ms) | Jina (ms) | Markify Content |")
     lines.append("|-----|-----------|---------------|-----------|--------------|")
     for r in scrape_results:
         fc = f"{r.firecrawl_ms:.0f}" if r.firecrawl_ms else "N/A"
         jina = f"{r.jina_ms:.0f}" if r.jina_ms else "N/A"
-        nexis = f"**{r.nexis_ms:.0f}**" if r.nexis_ms else "N/A"
-        lines.append(f"| {r.url[:50]} | {nexis} ({r.nexis_engine}) | {fc} | {jina} | {r.nexis_content_len:,} chars |")
+        markify = f"**{r.markify_ms:.0f}**" if r.markify_ms else "N/A"
+        lines.append(f"| {r.url[:50]} | {markify} ({r.markify_engine}) | {fc} | {jina} | {r.markify_content_len:,} chars |")
     lines.append("")
 
-    # VSB-Graph benchmarks (Nexis exclusive)
-    lines.append("## VSB-Graph Structured Extraction (Nexis Exclusive)")
+    # VSB-Graph benchmarks (Markify exclusive)
+    lines.append("## VSB-Graph Structured Extraction (Markify Exclusive)")
     lines.append("")
     lines.append("*No competitor offers Visual-Semantic Block Graph segmentation.*")
     lines.append("")
     lines.append("| URL | Total Blocks | Content | Boilerplate | Classification |")
     lines.append("|-----|-------------|---------|-------------|---------------|")
     for r in vsb_results:
-        status = f"**{r.nexis_ms:.0f}ms**" if r.nexis_ms else "N/A"
+        status = f"**{r.markify_ms:.0f}ms**" if r.markify_ms else "N/A"
         blocks = f"{r.total_blocks}" if r.total_blocks else "N/A"
         content = f"{r.content_blocks}" if r.content_blocks else "N/A"
         bp = f"{r.boilerplate_blocks}" if r.boilerplate_blocks else "N/A"
@@ -276,11 +276,11 @@ def generate_report(scrape_results: list, vsb_results: list, search_results: lis
     if search_results:
         lines.append("## Web Search Performance")
         lines.append("")
-        lines.append("| Query | Nexis (ms) | Results | Status |")
+        lines.append("| Query | Markify (ms) | Results | Status |")
         lines.append("|-------|-----------|---------|--------|")
         for r in search_results:
             status = r.error or "OK"
-            lines.append(f"| {r.query} | **{r.nexis_ms:.0f}** | {r.nexis_results} | {status} |")
+            lines.append(f"| {r.query} | **{r.markify_ms:.0f}** | {r.markify_results} | {status} |")
         lines.append("")
 
     # Feature Matrix
@@ -332,7 +332,7 @@ def generate_report(scrape_results: list, vsb_results: list, search_results: lis
     # Conclusion
     lines.append("## Conclusion")
     lines.append("")
-    lines.append("Nexis is the **only** MIT-licensed, Rust-native, MCP-first web data layer that offers:")
+    lines.append("Markify is the **only** MIT-licensed, Rust-native, MCP-first web data layer that offers:")
     lines.append("")
     lines.append("1. **VSB-Graph** — 35 semantic block types with ML classification (87%+ accuracy)")
     lines.append("2. **Hybrid Search** — Fielded BM25 + HNSW vector search with RRF fusion")
@@ -344,17 +344,17 @@ def generate_report(scrape_results: list, vsb_results: list, search_results: lis
     lines.append("8. **OpenTelemetry** — Distributed tracing, metrics, Jaeger/Prometheus export")
     lines.append("")
     lines.append("---")
-    lines.append("*Benchmarked with Nexis 0.1.0 (Rust/Axum)*")
-    lines.append("*github.com/nexis/nexis | nexis.dev*")
+    lines.append("*Benchmarked with Markify 0.1.0 (Rust/Axum)*")
+    lines.append("*github.com/skeehn/markify | markify.dev*")
 
     return "\n".join(lines)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Nexis Benchmark Tool")
+    parser = argparse.ArgumentParser(description="Markify Benchmark Tool")
     parser.add_argument("--urls", nargs="+", default=BENCHMARK_URLS, help="URLs to benchmark")
     parser.add_argument("--queries", nargs="+", default=SEARCH_QUERIES, help="Search queries")
-    parser.add_argument("--api-url", default=os.getenv("NEXIS_API_URL", "http://localhost:8080"))
+    parser.add_argument("--api-url", default=os.getenv("MARKIFY_API_URL", "http://localhost:8080"))
     parser.add_argument("--output", help="Output file (default: benchmark-report.md)")
     parser.add_argument("--no-search", action="store_true", help="Skip search benchmarks")
     parser.add_argument("--no-vsb", action="store_true", help="Skip VSB benchmarks")
@@ -363,7 +363,7 @@ def main():
     firecrawl_key = os.getenv("FIRECRAWL_API_KEY", "")
     jina_key = os.getenv("JINA_API_KEY", "")
 
-    print(f"Nexis Benchmark Tool")
+    print(f"Markify Benchmark Tool")
     print(f"====================")
     print(f"API URL: {args.api_url}")
     print(f"URLs: {len(args.urls)}")
@@ -376,11 +376,11 @@ def main():
     scrape_results = []
     for url in args.urls:
         result = ScrapeResult(url=url)
-        ms, content_len, engine, status = scrape_nexis(url, args.api_url)
-        result.nexis_ms = round(ms, 1)
-        result.nexis_content_len = content_len
-        result.nexis_engine = engine
-        result.nexis_status = status
+        ms, content_len, engine, status = scrape_markify(url, args.api_url)
+        result.markify_ms = round(ms, 1)
+        result.markify_content_len = content_len
+        result.markify_engine = engine
+        result.markify_status = status
 
         if firecrawl_key:
             ms, cl, _, st = scrape_firecrawl(url, firecrawl_key)
@@ -394,29 +394,29 @@ def main():
             result.jina_status = st
 
         scrape_results.append(result)
-        print(f"  OK {url}: Nexis={result.nexis_ms}ms")
+        print(f"  OK {url}: Markify={result.markify_ms}ms")
 
     # VSB benchmarks
     vsb_results = []
     if not args.no_vsb:
         print("\nRunning VSB-Graph benchmarks...")
         for url in args.urls[:5]:  # First 5 URLs
-            result = vsb_nexis(url, args.api_url)
+            result = vsb_markify(url, args.api_url)
             vsb_results.append(result)
-            print(f"  OK {url}: {result.total_blocks} blocks in {result.nexis_ms:.0f}ms")
+            print(f"  OK {url}: {result.total_blocks} blocks in {result.markify_ms:.0f}ms")
 
     # Search benchmarks
     search_results = []
     if not args.no_search:
         print("\nRunning search benchmarks...")
         for query in args.queries:
-            ms, count, status = search_nexis(query, args.api_url)
+            ms, count, status = search_markify(query, args.api_url)
             class SR:
                 pass
             sr = SR()
             sr.query = query
-            sr.nexis_ms = round(ms, 1)
-            sr.nexis_results = count
+            sr.markify_ms = round(ms, 1)
+            sr.markify_results = count
             sr.error = status if status != "OK" else None
             search_results.append(sr)
             print(f"  OK '{query}': {ms:.0f}ms, {count} results")

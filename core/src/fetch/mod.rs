@@ -1,21 +1,20 @@
 //! Fetch module: HTTP fetching with smart browser fallback.
 
-pub mod http;
 pub mod browser;
-pub mod router;
+pub mod http;
 pub mod proxy;
+pub mod router;
 
 pub use http::HttpFetcher;
-pub use router::FetchRouter;
 pub use proxy::{
-    ProxyPool, ProxyEntry, ProviderType, ProviderConfig,
-    BrowserFingerprint, StealthConfig, CaptchaSolver,
-    AntiBotConfig, BotProtectionType, CaptchaType,
-    detect_bot_protection, detect_captcha, stealth_cdp_script,
+    detect_bot_protection, detect_captcha, stealth_cdp_script, AntiBotConfig, BotProtectionType,
+    BrowserFingerprint, CaptchaSolver, CaptchaType, ProviderConfig, ProviderType, ProxyEntry,
+    ProxyPool, StealthConfig,
 };
+pub use router::FetchRouter;
 
-use reqwest::header::{HeaderMap, HeaderValue};
 use rand::Rng;
+use reqwest::header::{HeaderMap, HeaderValue};
 
 /// User-Agent pool for rotation
 const USER_AGENTS: &[&str] = &[
@@ -41,7 +40,9 @@ pub fn default_headers() -> HeaderMap {
     );
     headers.insert(
         reqwest::header::ACCEPT,
-        HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"),
+        HeaderValue::from_static(
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        ),
     );
     headers.insert(
         reqwest::header::ACCEPT_LANGUAGE,

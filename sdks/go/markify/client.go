@@ -1,17 +1,17 @@
-// Package nexis provides a Go client for the Nexis web data layer API.
+// Package markify provides a Go client for the Markify web data layer API.
 //
-// Nexis scrapes, searches, extracts, and structures web data — all through
+// Markify scrapes, searches, extracts, and structures web data — all through
 // a single self-hosted binary.
 //
 // Usage:
 //
-//	client := nexis.New("http://localhost:3000")
+//	client := markify.New("http://localhost:3000")
 //	result, err := client.Scrape(context.Background(), "https://example.com", nil)
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
 //	fmt.Println(result.Markdown)
-package nexis
+package markify
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ import (
 const defaultBaseURL = "http://localhost:3000"
 const defaultTimeout = 30 * time.Second
 
-// Client is the Nexis API client.
+// Client is the Markify API client.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
@@ -46,7 +46,7 @@ func WithAPIKey(key string) Option {
 	return func(cl *Client) { cl.apiKey = key }
 }
 
-// New creates a new Nexis client.
+// New creates a new Markify client.
 func New(baseURL string, opts ...Option) *Client {
 	if baseURL == "" {
 		baseURL = defaultBaseURL

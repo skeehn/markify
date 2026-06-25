@@ -7,7 +7,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
-use crate::scrape::{ScrapeResult, ScrapeMeta};
+use crate::scrape::{ScrapeMeta, ScrapeResult};
 
 /// Cilow export client
 pub struct CilowClient {
@@ -144,7 +144,8 @@ pub struct CilowConfig {
 impl Default for CilowConfig {
     fn default() -> Self {
         Self {
-            base_url: std::env::var("CILOW_API_URL").unwrap_or_else(|_| "http://localhost:8000".to_string()),
+            base_url: std::env::var("CILOW_API_URL")
+                .unwrap_or_else(|_| "http://localhost:8000".to_string()),
             api_key: std::env::var("CILOW_API_KEY").ok(),
         }
     }

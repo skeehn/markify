@@ -7,7 +7,7 @@ Prove Markify is SOTA — 10x faster, more features, more reliable.
 
 ### API Keys (stored in env vars)
 ```bash
-export NEXIS_API_URL="http://localhost:8080"
+export MARKIFY_API_URL="http://localhost:8080"
 export FIRECRAWL_API_KEY="fc-a98a621a33c5434aa327f23d7941fa7f"
 export JINA_API_KEY="jina_1d8ae227dba74ecfa0454655f09913ebEbp2JgQ4v2CBQCO8jddFagyZZhm9"
 ```

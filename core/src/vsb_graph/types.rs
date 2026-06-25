@@ -456,9 +456,7 @@ impl VSBGraph {
     pub fn primary_content(&self) -> Vec<&VSBBlock> {
         self.blocks
             .values()
-            .filter(|b| {
-                b.semantic_role == SemanticRole::PrimaryContent && !b.is_boilerplate
-            })
+            .filter(|b| b.semantic_role == SemanticRole::PrimaryContent && !b.is_boilerplate)
             .collect()
     }
 

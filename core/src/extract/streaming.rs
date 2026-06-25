@@ -3,7 +3,6 @@
 //! This approach uses Cloudflare's lol_html for streaming HTML rewriting,
 //! maintaining a constant 5-6KB memory footprint regardless of input size.
 
-
 /// Convert raw HTML to clean Markdown.
 /// Uses html2md (fast_html2md) built on Cloudflare's lol_html for streaming,
 /// maintaining constant 5-6KB memory regardless of input size.

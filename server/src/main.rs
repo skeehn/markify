@@ -9,15 +9,15 @@
 //!   markify --version         # Show version
 
 use clap::{Parser, Subcommand};
-use tracing::{info, error};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-mod rest;
 mod mcp;
+mod rest;
 
 /// Markify — The web data layer for AI agents
 #[derive(Parser)]
-#[command(name = "nexis", version, about, long_about = None)]
+#[command(name = "markify", version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -58,9 +58,10 @@ enum Commands {
 async fn main() -> anyhow::Result<()> {
     // Initialize tracing
     tracing_subscriber::registry()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            EnvFilter::new("info,markify_core=debug")
-        }))
+        .with(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info,markify_core=debug")),
+        )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
@@ -95,8 +96,7 @@ async fn start_server(bind: &str, _mcp: bool) -> anyhow::Result<()> {
     info!("Markify server running on http://{}", bind);
     info!("API docs: http://{}/health", bind);
 
-    axum::serve(listener, app)
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
@@ -108,7 +108,9 @@ async fn start_mcp() -> anyhow::Result<()> {
 
 /// CLI scrape command
 async fn cli_scrape(url: &str, format: &str, mode: &str) -> anyhow::Result<()> {
-    use nexis_core::{Markify, ScrapeRequest, OutputFormat, ExtractionMode, FetchConfig, CacheConfig};
+    use markify_core::{
+        CacheConfig, ExtractionMode, FetchConfig, Markify, OutputFormat, ScrapeRequest,
+    };
 
     let output_format = match format {
         "json" => OutputFormat::Json,
@@ -126,12 +128,14 @@ async fn cli_scrape(url: &str, format: &str, mode: &str) -> anyhow::Result<()> {
 
     let client = Markify::new(FetchConfig::default(), CacheConfig::default());
 
-    let result = client.scrape(ScrapeRequest {
-        url: url.to_string(),
-        formats: vec![output_format.clone()],
-        mode: extraction_mode,
-        ..Default::default()
-    }).await?;
+    let result = client
+        .scrape(ScrapeRequest {
+            url: url.to_string(),
+            formats: vec![output_format.clone()],
+            mode: extraction_mode,
+            ..Default::default()
+        })
+        .await?;
 
     match output_format {
         OutputFormat::Markdown | OutputFormat::Both => {

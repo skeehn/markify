@@ -1,5 +1,5 @@
 #!/bin/bash
-# Nexis Fly.io Deployment Script
+# Markify Fly.io Deployment Script
 #
 # Usage:
 #   ./deploy/deploy.sh              # Full deploy
@@ -12,11 +12,11 @@
 
 set -euo pipefail
 
-APP_NAME="${APP_NAME:-nexis}"
+APP_NAME="${APP_NAME:-markify}"
 REGION="${REGION:-sjc}"
 
 echo "============================================"
-echo "  Nexis Fly.io Deployment"
+echo "  Markify Fly.io Deployment"
 echo "============================================"
 echo ""
 echo "App: $APP_NAME"
@@ -97,7 +97,7 @@ if [[ "${1:-}" != "--no-deploy" ]]; then
     if curl -sf "$APP_URL/v1/health" > /dev/null 2>&1; then
         echo "  SUCCESS: $APP_URL/v1/health"
         echo ""
-        echo "Nexis is live at: $APP_URL"
+        echo "Markify is live at: $APP_URL"
         echo ""
         echo "Run the cloud validation:"
         echo "  ./deploy/test-cloud.sh $APP_URL"

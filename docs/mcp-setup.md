@@ -19,8 +19,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 ```json
 {
   "mcpServers": {
-    "nexis": {
-      "command": "nexis",
+    "markify": {
+      "command": "markify",
       "args": ["mcp"],
       "env": {
         "SERPER_API_KEY": "your_serper_key_here"
@@ -39,8 +39,8 @@ Add to `.cursor/mcp.json` in your project:
 ```json
 {
   "mcpServers": {
-    "nexis": {
-      "command": "nexis",
+    "markify": {
+      "command": "markify",
       "args": ["mcp"],
       "env": {
         "SERPER_API_KEY": "your_serper_key_here"
@@ -57,8 +57,8 @@ Add to `.windsurf/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "nexis": {
-      "command": "nexis",
+    "markify": {
+      "command": "markify",
       "args": ["mcp"],
       "env": {
         "SERPER_API_KEY": "your_serper_key_here"
@@ -79,7 +79,7 @@ SERPER_API_KEY=your_key ./target/release/markify mcp
 ## From Docker
 
 ```bash
-docker run -i -e SERPER_API_KEY=your_key nexis/nexis mcp
+docker run -i -e SERPER_API_KEY=your_key skeehn/markify mcp
 ```
 
 ## Testing MCP Tools

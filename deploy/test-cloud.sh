@@ -1,5 +1,5 @@
 #!/bin/bash
-# Nexis Cloud Validation Script
+# Markify Cloud Validation Script
 #
 # Usage:
 #   ./deploy/test-cloud.sh https://your-app.fly.dev
@@ -23,9 +23,9 @@ test_endpoint() {
     TOTAL=$((TOTAL + 1))
 
     if [ "$method" = "GET" ]; then
-        response=$(curl -sf -w "%{http_code}" -o /tmp/nexis_response "$BASE_URL$path" 2>/dev/null) || response="000"
+        response=$(curl -sf -w "%{http_code}" -o /tmp/markify_response "$BASE_URL$path" 2>/dev/null) || response="000"
     else
-        response=$(curl -sf -w "%{http_code}" -o /tmp/nexis_response -X POST "$BASE_URL$path" \
+        response=$(curl -sf -w "%{http_code}" -o /tmp/markify_response -X POST "$BASE_URL$path" \
             -H "Content-Type: application/json" \
             -d "$data" 2>/dev/null) || response="000"
     fi
@@ -43,7 +43,7 @@ test_endpoint() {
 }
 
 echo "============================================"
-echo "  Nexis Cloud Validation"
+echo "  Markify Cloud Validation"
 echo "============================================"
 echo ""
 echo "Base URL: $BASE_URL"
@@ -100,7 +100,7 @@ echo ""
 if [ "$FAIL" -eq 0 ]; then
     echo "  ALL ENDPOINTS WORKING"
     echo ""
-    echo "  Nexis is production-ready at: $BASE_URL"
+    echo "  Markify is production-ready at: $BASE_URL"
     exit 0
 else
     echo "  SOME ENDPOINTS FAILED"

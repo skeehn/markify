@@ -1,5 +1,5 @@
 #!/bin/bash
-# Nexis Master Test Runner
+# Markify Master Test Runner
 #
 # Runs:
 # 1. Rust unit tests (61 tests)
@@ -15,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==========================================="
-echo "  NEXIS MASTER TEST SUITE"
+echo "  MARKIFY MASTER TEST SUITE"
 echo "==========================================="
 echo ""
 
@@ -42,7 +42,7 @@ if curl -sf http://localhost:3000/v1/health > /dev/null 2>&1; then
     python3 tests/test_full_e2e.py
 else
     echo "   ⚠️ Server not running. Skipping Python E2E tests."
-    echo "   Start server with: cargo run --bin nexis -- server"
+    echo "   Start server with: cargo run --bin markify -- server"
     echo "   Then run: python3 tests/test_full_e2e.py"
 fi
 
@@ -53,11 +53,11 @@ echo "4. Running AI Model Tests..."
 if [ -z "${OPENROUTER_API_KEY:-}" ] || [ -z "${CEREBRAS_API_KEY:-}" ]; then
     echo "   ⚠️ API keys not set. Skipping AI model tests."
     echo "   Set: OPENROUTER_API_KEY and CEREBRAS_API_KEY"
-    echo "   Then run: cd nexis-sota && python3 tests/test_ai_models.py"
+    echo "   Then run: cd markify-sota && python3 tests/test_ai_models.py"
 else
-    cd ../nexis-sota
+    cd ../markify-sota
     python3 tests/test_ai_models.py
-    cd ../nexis
+    cd ../markify
 fi
 
 echo ""
@@ -70,4 +70,4 @@ echo "  - e2e-test-report.json (endpoint tests with real URLs)"
 echo "  - ai-model-test-report.json (AI model latency/quality)"
 echo ""
 echo "To deploy to fly.io:"
-echo "  cd nexis && ./deploy/deploy.sh"
+echo "  cd markify && ./deploy/deploy.sh"

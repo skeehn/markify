@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use tracing::debug;
-use usearch::{Index, IndexOptions, MetricKind, ScalarKind};
 use usearch::ffi::Matches;
+use usearch::{Index, IndexOptions, MetricKind, ScalarKind};
 
 /// Dense vector (fixed dimension)
 #[derive(Debug, Clone)]
@@ -52,7 +52,7 @@ impl DenseVector {
 /// Embedding backend: TF-IDF or ML (fastembed)
 #[cfg(feature = "ml-embeddings")]
 mod embedder {
-    use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
+    use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
     use once_cell::sync::OnceCell;
 
     static MODEL: OnceCell<TextEmbedding> = OnceCell::new();
@@ -60,8 +60,7 @@ mod embedder {
     pub fn get_model() -> &'static TextEmbedding {
         MODEL.get_or_init(|| {
             TextEmbedding::try_new(
-                InitOptions::new(EmbeddingModel::BGESmallENV15)
-                    .with_show_download_progress(true),
+                InitOptions::new(EmbeddingModel::BGESmallENV15).with_show_download_progress(true),
             )
             .expect("Failed to load BGE-Small embedding model")
         })
@@ -69,7 +68,9 @@ mod embedder {
 
     pub fn embed_text(text: &str) -> Vec<f32> {
         let model = get_model();
-        let embeddings = model.embed(vec![text.to_string()], None).expect("Embedding failed");
+        let embeddings = model
+            .embed(vec![text.to_string()], None)
+            .expect("Embedding failed");
         embeddings.into_iter().next().unwrap_or_default()
     }
 
@@ -210,7 +211,9 @@ impl DenseIndex {
         if self.use_ml {
             // ML mode: compute embeddings via fastembed
             for entry in &mut self.entries {
-                if entry.vector.data.is_empty() || entry.vector.data.len() != embedder::embedding_dim() {
+                if entry.vector.data.is_empty()
+                    || entry.vector.data.len() != embedder::embedding_dim()
+                {
                     entry.vector = DenseVector::new(embedder::embed_text(&entry.text));
                 }
             }
@@ -221,7 +224,13 @@ impl DenseIndex {
                     if entry.vector.data.len() == self.dim {
                         let key = self.next_hnsw_key;
                         hnsw.add(key, &entry.vector.data)?;
-                        self.key_to_idx.insert(key, self.entries.iter().position(|e| e.block_id == entry.block_id).unwrap());
+                        self.key_to_idx.insert(
+                            key,
+                            self.entries
+                                .iter()
+                                .position(|e| e.block_id == entry.block_id)
+                                .unwrap(),
+                        );
                         self.next_hnsw_key += 1;
                     }
                 }
@@ -250,7 +259,10 @@ impl DenseIndex {
 
             for token in tokens {
                 *term_freq.entry(token.clone()).or_insert(0usize) += 1;
-                doc_freq.entry(token).and_modify(|d: &mut usize| *d += 1).or_insert(1usize);
+                doc_freq
+                    .entry(token)
+                    .and_modify(|d: &mut usize| *d += 1)
+                    .or_insert(1usize);
             }
         }
 
@@ -283,7 +295,13 @@ impl DenseIndex {
                 if entry.vector.data.len() == self.dim {
                     let key = self.next_hnsw_key;
                     hnsw.add(key, &entry.vector.data)?;
-                    self.key_to_idx.insert(key, self.entries.iter().position(|e| e.block_id == entry.block_id).unwrap());
+                    self.key_to_idx.insert(
+                        key,
+                        self.entries
+                            .iter()
+                            .position(|e| e.block_id == entry.block_id)
+                            .unwrap(),
+                    );
                     self.next_hnsw_key += 1;
                 }
             }
@@ -402,11 +420,8 @@ impl DenseIndex {
         };
 
         // Build key → entry mapping
-        let key_to_entry: HashMap<u64, &IndexEntry> = self
-            .entries
-            .iter()
-            .map(|e| (e.hnsw_key, e))
-            .collect();
+        let key_to_entry: HashMap<u64, &IndexEntry> =
+            self.entries.iter().map(|e| (e.hnsw_key, e)).collect();
 
         matches
             .keys
@@ -439,7 +454,6 @@ impl DenseIndex {
         self.entries.len()
     }
 }
-
 
 /// Neural search configuration
 #[derive(Debug, Clone)]

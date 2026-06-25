@@ -2673,6 +2673,64 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "670fdfda89751bc4a84ac13eaa63e205cf0fd22b4c9a5fbfa085b63c1f1d3a30"
 
 [[package]]
+name = "markify-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chromiumoxide",
+ "chrono",
+ "dom_query",
+ "dom_smoothie",
+ "fast_html2md",
+ "fastembed",
+ "fastrand",
+ "governor",
+ "lol_html",
+ "moka",
+ "once_cell",
+ "rand 0.8.5",
+ "regex",
+ "reqwest",
+ "robotstxt",
+ "scraper",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tantivy",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "url",
+ "usearch",
+ "uuid",
+]
+
+[[package]]
+name = "markify-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum 0.7.9",
+ "chrono",
+ "clap",
+ "http-body-util",
+ "hyper",
+ "markify-core",
+ "rmcp",
+ "scraper",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "markup5ever"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2911,64 +2969,6 @@ name = "new_debug_unreachable"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
-
-[[package]]
-name = "nexis-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chromiumoxide",
- "chrono",
- "dom_query",
- "dom_smoothie",
- "fast_html2md",
- "fastembed",
- "fastrand",
- "governor",
- "lol_html",
- "moka",
- "once_cell",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "robotstxt",
- "scraper",
- "serde",
- "serde_json",
- "sha2",
- "tantivy",
- "thiserror 2.0.18",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "url",
- "usearch",
- "uuid",
-]
-
-[[package]]
-name = "nexis-server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum 0.7.9",
- "chrono",
- "clap",
- "http-body-util",
- "hyper",
- "nexis-core",
- "rmcp",
- "scraper",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tower",
- "tower-http 0.5.2",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
 
 [[package]]
 name = "no-std-compat"

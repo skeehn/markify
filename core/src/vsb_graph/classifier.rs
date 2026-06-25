@@ -158,14 +158,28 @@ fn compute_structure_score(block: &VSBBlock) -> f64 {
     let selectors_str = block.source_selectors.join(" ").to_lowercase();
 
     let boilerplate_indicators = [
-        "nav", "navigation", "menu", "header", "footer", "sidebar",
-        "advert", "ad-", "ad_", "sponsor", "cookie", "banner",
-        "breadcrumb", "pagination", "related", "share", "social",
+        "nav",
+        "navigation",
+        "menu",
+        "header",
+        "footer",
+        "sidebar",
+        "advert",
+        "ad-",
+        "ad_",
+        "sponsor",
+        "cookie",
+        "banner",
+        "breadcrumb",
+        "pagination",
+        "related",
+        "share",
+        "social",
     ];
 
     let content_indicators = [
-        "article", "content", "post", "entry", "body", "main",
-        "story", "blog", "news", "text", "read",
+        "article", "content", "post", "entry", "body", "main", "story", "blog", "news", "text",
+        "read",
     ];
 
     let mut boilerplate_count = 0;

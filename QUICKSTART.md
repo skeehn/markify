@@ -1,19 +1,19 @@
-# Nexis Quickstart
+# Markify Quickstart
 
-Get Nexis running in 3 minutes. No experience required.
+Get Markify running in 3 minutes. No experience required.
 
 ## Step 1: Install (30 seconds)
 
 ```bash
-git clone https://github.com/skeehn/nexis
-cd nexis
+git clone https://github.com/skeehn/markify
+cd markify
 cargo build --release
 ```
 
 Or with Docker:
 ```bash
-git clone https://github.com/skeehn/nexis
-cd nexis
+git clone https://github.com/skeehn/markify
+cd markify
 docker compose up -d
 ```
 
@@ -21,15 +21,15 @@ docker compose up -d
 
 ```bash
 # With search (recommended)
-SERPER_API_KEY=your_key nexis server
+SERPER_API_KEY=your_key markify server
 
 # Without search (scraping only)
-nexis server
+markify server
 ```
 
 You'll see:
 ```
-Nexis server starting on http://0.0.0.0:3000
+Markify server starting on http://0.0.0.0:3000
 ```
 
 ## Step 3: Scrape Your First URL (30 seconds)
@@ -88,15 +88,15 @@ curl -X POST http://localhost:3000/v1/hybrid-search \
 
 - **[API Reference](docs/API_REFERENCE.md)** — All 25 endpoints documented
 - **[API Examples](docs/API_EXAMPLES.md)** — curl, Python, TypeScript, Go examples
-- **[Architecture](docs/ARCHITECTURE.md)** — How Nexis works internally
+- **[Architecture](docs/ARCHITECTURE.md)** — How Markify works internally
 - **[MCP Setup](docs/mcp-setup.md)** — Connect to Claude, Cursor, Windsurf
 
 ## Quick Commands Reference
 
 | Command | What it does |
 |---------|-------------|
-| `nexis server` | Start HTTP server on port 3000 |
-| `nexis mcp` | Start MCP server for AI agents |
+| `markify server` | Start HTTP server on port 3000 |
+| `markify mcp` | Start MCP server for AI agents |
 | `curl /v1/health` | Check server health |
 | `curl /v1/scrape` | Scrape a URL |
 | `curl /v1/search` | Search the web |

@@ -2,11 +2,11 @@
 //!
 //! Produces both Markdown and structured JSON from extracted content.
 
-pub mod markdown;
 pub mod json;
+pub mod markdown;
 
-pub use markdown::to_markdown;
 pub use json::to_structured_json;
+pub use markdown::to_markdown;
 
 use serde::{Deserialize, Serialize};
 

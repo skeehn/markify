@@ -1,5 +1,5 @@
-# fly.toml — Nexis single-region MVP deployment
-app = "nexis"
+# fly.toml — Markify single-region MVP deployment
+app = "markify"
 primary_region = "sjc"  # San Jose
 
 [build]
@@ -7,7 +7,7 @@ primary_region = "sjc"  # San Jose
 
 [env]
   PORT = "3000"
-  RUST_LOG = "info,nexis_core=debug"
+  RUST_LOG = "info,markify_core=debug"
 
 [http_service]
   internal_port = 3000

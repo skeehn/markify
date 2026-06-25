@@ -85,17 +85,16 @@ impl CrossEncoderReranker {
     }
 
     /// Re-rank search results using cross-encoder scoring
-    pub fn rerank(
-        &self,
-        query: &str,
-        candidates: Vec<CandidateDocument>,
-    ) -> Vec<ReRankedResult> {
+    pub fn rerank(&self, query: &str, candidates: Vec<CandidateDocument>) -> Vec<ReRankedResult> {
         if candidates.is_empty() {
             return Vec::new();
         }
 
         // Limit candidates
-        let candidates: Vec<_> = candidates.into_iter().take(self.config.max_candidates).collect();
+        let candidates: Vec<_> = candidates
+            .into_iter()
+            .take(self.config.max_candidates)
+            .collect();
 
         // Score each candidate
         let mut scored: Vec<(CandidateDocument, f64)> = candidates
@@ -114,19 +113,22 @@ impl CrossEncoderReranker {
             .into_iter()
             .take(self.config.top_k)
             .enumerate()
-            .map(|(rank, (doc, ce_score))| {
-                ReRankedResult {
-                    block_id: doc.block_id,
-                    url: doc.url,
-                    title: doc.title,
-                    text_snippet: doc.text_snippet,
-                    block_type: doc.block_type,
-                    bm25_score: doc.bm25_score,
-                    dense_similarity: doc.dense_similarity,
-                    cross_encoder_score: ce_score,
-                    final_score: self.combine_scores(doc.bm25_score, doc.dense_similarity, ce_score, rank),
-                    rank: rank + 1,
-                }
+            .map(|(rank, (doc, ce_score))| ReRankedResult {
+                block_id: doc.block_id,
+                url: doc.url,
+                title: doc.title,
+                text_snippet: doc.text_snippet,
+                block_type: doc.block_type,
+                bm25_score: doc.bm25_score,
+                dense_similarity: doc.dense_similarity,
+                cross_encoder_score: ce_score,
+                final_score: self.combine_scores(
+                    doc.bm25_score,
+                    doc.dense_similarity,
+                    ce_score,
+                    rank,
+                ),
+                rank: rank + 1,
             })
             .collect()
     }
@@ -191,8 +193,8 @@ impl CrossEncoderReranker {
         let bm25_norm = bm25_score.unwrap_or(0.0) / 20.0; // Normalize BM25
         let dense_norm = dense_sim.unwrap_or(0.0); // Already 0-1
 
-        0.6 * ce_score + 0.2 * bm25_norm.min(1.0) + 0.2 * dense_norm
-            - 0.01 * rank as f64 // Small rank penalty
+        0.6 * ce_score + 0.2 * bm25_norm.min(1.0) + 0.2 * dense_norm - 0.01 * rank as f64
+        // Small rank penalty
     }
 }
 
@@ -217,7 +219,10 @@ mod tests {
     fn test_heuristic_scoring() {
         let reranker = CrossEncoderReranker::new(CrossEncoderConfig::default());
 
-        let score = reranker.heuristic_score("web scraping tool", "web scraping is a technique for extracting data");
+        let score = reranker.heuristic_score(
+            "web scraping tool",
+            "web scraping is a technique for extracting data",
+        );
         assert!(score > 0.5); // Should match "web" and "scraping"
 
         let score_low = reranker.heuristic_score("quantum computing", "baking cookies recipe");

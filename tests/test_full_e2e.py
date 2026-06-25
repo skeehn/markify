@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Nexis Full E2E Test Suite
+Markify Full E2E Test Suite
 
-Starts the Nexis server and tests all 25 endpoints with 10+ real URLs.
+Starts the Markify server and tests all 25 endpoints with 10+ real URLs.
 Verifies responses, measures latency, and generates a comprehensive report.
 """
 
@@ -18,7 +18,7 @@ from typing import Optional
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-NEXIS_SERVER_URL = os.environ.get("NEXIS_SERVER_URL", "http://localhost:3000")
+MARKIFY_SERVER_URL = os.environ.get("MARKIFY_SERVER_URL", "http://localhost:3000")
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
 START_SERVER = os.environ.get("START_SERVER", "true").lower() == "true"
 
@@ -67,7 +67,7 @@ class EndpointTestResult:
 
 def test_endpoint(method: str, path: str, data: dict = None, params: dict = None) -> EndpointTestResult:
     """Test a single endpoint."""
-    url = f"{NEXIS_SERVER_URL}{path}"
+    url = f"{MARKIFY_SERVER_URL}{path}"
 
     start = time.time()
     try:
@@ -111,8 +111,8 @@ def run_full_e2e_test():
     results = []
 
     print(f"===========================================")
-    print(f"  Nexis Full E2E Test Suite")
-    print(f"  Server: {NEXIS_SERVER_URL}")
+    print(f"  Markify Full E2E Test Suite")
+    print(f"  Server: {MARKIFY_SERVER_URL}")
     print(f"  URLs: {len(TEST_URLS)} | Queries: {len(SEARCH_QUERIES)}")
     print(f"===========================================\n")
 

@@ -6,15 +6,15 @@
 //! - Metadata extraction (OG, Twitter Cards, JSON-LD)
 //! - Link extraction with relevance scoring
 
+pub mod links;
+pub mod metadata;
 pub mod readability;
 pub mod streaming;
-pub mod metadata;
-pub mod links;
 
+pub use links::extract_links;
+pub use metadata::extract_metadata;
 pub use readability::extract_article;
 pub use streaming::clean_html_to_markdown;
-pub use metadata::extract_metadata;
-pub use links::extract_links;
 
 use serde::{Deserialize, Serialize};
 

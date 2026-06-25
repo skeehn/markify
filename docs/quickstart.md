@@ -24,7 +24,7 @@ markify scrape https://example.com --mode smart --format markdown
 ## Option 2: Docker
 
 ```bash
-docker run -p 3000:3000 -e SERPER_API_KEY=your_key nexis/nexis
+docker run -p 3000:3000 -e SERPER_API_KEY=your_key skeehn/markify
 ```
 
 Or with docker-compose:
@@ -36,7 +36,7 @@ SERPER_API_KEY=your_key docker-compose up -d
 ## Option 3: From source
 
 ```bash
-git clone https://github.com/nexis/markify.git
+git clone https://github.com/skeehn/markify.git
 cd markify
 cargo build --release
 ./target/release/markify server
@@ -50,7 +50,7 @@ curl http://localhost:3000/v1/health
 
 Expected:
 ```json
-{"status":"ok","service":"nexis","version":"0.1.0"}
+{"status":"ok","service":"markify","version":"0.1.0"}
 ```
 
 ## Quick API examples
@@ -131,8 +131,8 @@ Add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "nexis": {
-      "command": "nexis",
+    "markify": {
+      "command": "markify",
       "args": ["mcp"],
       "env": {
         "SERPER_API_KEY": "your_key"

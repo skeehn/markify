@@ -1,4 +1,4 @@
-# Nexis — Production Dockerfile for fly.io
+# Markify — Production Dockerfile for fly.io
 FROM rust:1.82-slim AS builder
 
 WORKDIR /app
@@ -20,14 +20,14 @@ RUN mkdir -p core/src server/src \
     && echo "fn main() {}" > server/src/main.rs
 
 # Build dependencies first (cached if Cargo.toml unchanged)
-RUN cargo build --release --bin nexis 2>/dev/null || true
+RUN cargo build --release --bin markify 2>/dev/null || true
 
 # Copy real source
 COPY core/src core/src
 COPY server/src server/src
 
 # Build the actual binary
-RUN cargo build --release --bin nexis
+RUN cargo build --release --bin markify
 
 # Runtime image
 FROM debian:bookworm-slim
@@ -39,11 +39,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/nexis /usr/local/bin/nexis
+COPY --from=builder /app/target/release/markify /usr/local/bin/markify
 
 # Create non-root user
-RUN useradd -m nexis
-USER nexis
+RUN useradd -m markify
+USER markify
 
 EXPOSE 3000
 
@@ -53,4 +53,4 @@ ENV PORT=3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://localhost:3000/v1/health || exit 1
 
-CMD ["nexis", "server"]
+CMD ["markify", "server"]

@@ -4,10 +4,10 @@ pub mod query_understanding;
 pub mod reranker;
 
 pub use query_understanding::{
-    understand_query, QueryUnderstandingResult, IntentClassifier, QueryIntent,
-    extract_entities, rewrite_query, QueryRewriteResult, RewriteType,
+    extract_entities, rewrite_query, understand_query, IntentClassifier, QueryIntent,
+    QueryRewriteResult, QueryUnderstandingResult, RewriteType,
 };
-pub use reranker::{CrossEncoderReranker, CrossEncoderConfig, ReRankedResult, CandidateDocument};
+pub use reranker::{CandidateDocument, CrossEncoderConfig, CrossEncoderReranker, ReRankedResult};
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -63,11 +63,7 @@ impl SearchClient {
     }
 
     /// Search the web and return organic results.
-    pub async fn search(
-        &self,
-        query: &str,
-        num_results: usize,
-    ) -> anyhow::Result<SearchResult> {
+    pub async fn search(&self, query: &str, num_results: usize) -> anyhow::Result<SearchResult> {
         debug!(query = %query, count = num_results, "Searching via Serper");
 
         let response = self

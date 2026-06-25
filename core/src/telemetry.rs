@@ -7,7 +7,7 @@
 
 pub mod otel;
 
-pub use otel::{OtelObservability, OtelExporter, TraceContext, TraceMiddleware, MetricsSummary};
+pub use otel::{MetricsSummary, OtelExporter, OtelObservability, TraceContext, TraceMiddleware};
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -58,8 +58,12 @@ impl Telemetry {
             self.cache_hits.fetch_add(1, Ordering::Relaxed);
         }
         match engine {
-            "http" => { self.http_engine_count.fetch_add(1, Ordering::Relaxed); }
-            "browser" => { self.browser_engine_count.fetch_add(1, Ordering::Relaxed); }
+            "http" => {
+                self.http_engine_count.fetch_add(1, Ordering::Relaxed);
+            }
+            "browser" => {
+                self.browser_engine_count.fetch_add(1, Ordering::Relaxed);
+            }
             _ => {}
         };
     }

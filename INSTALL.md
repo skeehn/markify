@@ -1,6 +1,6 @@
-# Installing Nexis
+# Installing Markify
 
-Three ways to install Nexis — pick the one that fits your workflow.
+Three ways to install Markify — pick the one that fits your workflow.
 
 ## Option 1: Cargo (Rust developers)
 
@@ -9,18 +9,18 @@ Three ways to install Nexis — pick the one that fits your workflow.
 cargo install --path server
 
 # Start the server
-nexis server
+markify server
 
 # Or with API keys
-SERPER_API_KEY=your_key nexis server
+SERPER_API_KEY=your_key markify server
 ```
 
 ## Option 2: Docker (Everyone)
 
 ```bash
 # Clone the repo
-git clone https://github.com/skeehn/nexis
-cd nexis
+git clone https://github.com/skeehn/markify
+cd markify
 
 # Build and run
 docker compose up -d
@@ -36,23 +36,23 @@ docker compose --env-file .env up -d
 
 ```bash
 # Tap the repo
-brew tap skeehn/nexis
+brew tap skeehn/markify
 
 # Install
-brew install nexis
+brew install markify
 
 # Start
-nexis server
+markify server
 ```
 
 ## Verify Installation
 
 ```bash
 # Check version
-nexis --version
+markify --version
 
 # Start server
-nexis server &
+markify server &
 
 # Health check
 curl http://localhost:3000/v1/health
@@ -106,7 +106,7 @@ cargo build --release
 
 ```bash
 # Use a different port
-PORT=8080 nexis server
+PORT=8080 markify server
 ```
 
 ### Docker build fails

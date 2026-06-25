@@ -3,7 +3,7 @@
 //! This is the ONLY Readability implementation in Rust that consistently
 //! isolates main article content across diverse page structures.
 
-use dom_smoothie::{Readability, Config};
+use dom_smoothie::{Config, Readability};
 use tracing::{debug, warn};
 
 use crate::extract::ExtractedContent;

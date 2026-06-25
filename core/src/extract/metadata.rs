@@ -12,7 +12,7 @@ pub fn extract_metadata(html: &str, base_url: Option<&str>) -> Metadata {
     let mut metadata = Metadata::default();
 
     // Extract <title>
-    if let Some(title_sel) = Selector::parse("title").ok() {
+    if let Ok(title_sel) = Selector::parse("title") {
         if let Some(title) = document
             .select(&title_sel)
             .next()
@@ -49,28 +49,20 @@ pub fn extract_metadata(html: &str, base_url: Option<&str>) -> Metadata {
             "og:type" => metadata.og_type = Some(content.to_string()),
 
             // Twitter Cards
-            "twitter:title" => {
-                if metadata.title.is_none() {
-                    metadata.title = Some(content.to_string());
-                }
+            "twitter:title" if metadata.title.is_none() => {
+                metadata.title = Some(content.to_string());
             }
-            "twitter:description" => {
-                if metadata.description.is_none() {
-                    metadata.description = Some(content.to_string());
-                }
+            "twitter:description" if metadata.description.is_none() => {
+                metadata.description = Some(content.to_string());
             }
-            "twitter:image" => {
-                if metadata.image.is_none() {
-                    metadata.image = Some(resolve_url(content, base_url));
-                }
+            "twitter:image" if metadata.image.is_none() => {
+                metadata.image = Some(resolve_url(content, base_url));
             }
             "twitter:card" => metadata.twitter_card = Some(content.to_string()),
 
             // Standard meta
-            "description" => {
-                if metadata.description.is_none() {
-                    metadata.description = Some(content.to_string());
-                }
+            "description" if metadata.description.is_none() => {
+                metadata.description = Some(content.to_string());
             }
             "author" => metadata.author = Some(content.to_string()),
 

@@ -10,7 +10,6 @@
 //! 3. VSB-Graph segments the snapshot into blocks
 //! 4. Only escalate to full browser if snapshot fails
 
-
 /// Renderless CDP capture result
 #[derive(Debug, Clone)]
 pub struct RenderlessCapture {
@@ -84,44 +83,41 @@ impl RenderlessEngine {
             }
         });
 
-        let result = timeout(
-            Duration::from_millis(self.config.timeout_ms),
-            async {
-                let page = browser.new_page("about:blank").await?;
-                page.goto(url).await?;
+        let result = timeout(Duration::from_millis(self.config.timeout_ms), async {
+            let page = browser.new_page("about:blank").await?;
+            page.goto(url).await?;
 
-                // Capture DOM snapshot (no rendering, no paint)
-                let params = CaptureSnapshotParams {
-                    include_dom_rects: false,
-                    include_computed_styles: false,
-                    include_paint_order: false,
-                    include_user_agent_shadow_roots: false,
-                };
-                let snapshot = page.execute(params).await?;
+            // Capture DOM snapshot (no rendering, no paint)
+            let params = CaptureSnapshotParams {
+                include_dom_rects: false,
+                include_computed_styles: false,
+                include_paint_order: false,
+                include_user_agent_shadow_roots: false,
+            };
+            let snapshot = page.execute(params).await?;
 
-                // Extract HTML from snapshot
-                let html = snapshot
-                    .documents
-                    .first()
-                    .map(|doc| {
-                        doc.nodes
-                            .text
-                            .iter()
-                            .filter_map(|t| t.as_ref())
-                            .collect::<String>()
-                    })
-                    .unwrap_or_default();
-
-                let title = page.get_title().await.ok().flatten();
-
-                Ok(RenderlessCapture {
-                    html,
-                    title,
-                    external_urls: Vec::new(),
-                    required_js: false,
+            // Extract HTML from snapshot
+            let html = snapshot
+                .documents
+                .first()
+                .map(|doc| {
+                    doc.nodes
+                        .text
+                        .iter()
+                        .filter_map(|t| t.as_ref())
+                        .collect::<String>()
                 })
-            },
-        )
+                .unwrap_or_default();
+
+            let title = page.get_title().await.ok().flatten();
+
+            Ok(RenderlessCapture {
+                html,
+                title,
+                external_urls: Vec::new(),
+                required_js: false,
+            })
+        })
         .await;
 
         match result {

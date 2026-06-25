@@ -4,7 +4,6 @@
 //! This is the slow path but necessary for the 15-20% of pages
 //! that render content client-side.
 
-
 use crate::fetch::{FetchConfig, FetchedPage};
 
 /// Browser-based page fetcher.

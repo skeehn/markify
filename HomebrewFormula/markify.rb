@@ -1,7 +1,7 @@
-class Nexis < Formula
+class Markify < Formula
   desc "Web data layer for AI agents — scrape, search, extract, structure"
-  homepage "https://github.com/skeehn/nexis"
-  url "https://github.com/skeehn/nexis/archive/refs/tags/v0.1.0.tar.gz"
+  homepage "https://github.com/skeehn/markify"
+  url "https://github.com/skeehn/markify/archive/refs/tags/v0.1.0.tar.gz"
   sha256 "FILL_IN_AFTER_TAG_RELEASE"
   license "Apache-2.0"
 
@@ -12,13 +12,13 @@ class Nexis < Formula
   end
 
   service do
-    run [opt_bin/"nexis", "server"]
+    run [opt_bin/"markify", "server"]
     working_dir var
     keep_alive true
     environment_variables RUST_LOG: "info"
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/nexis --version")
+    assert_match version.to_s, shell_output("#{bin}/markify --version")
   end
 end

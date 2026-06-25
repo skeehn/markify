@@ -8,10 +8,6 @@ pub fn to_markdown(html: &str) -> String {
 }
 
 /// Convert HTML to Markdown with custom options.
-pub fn to_markdown_with_options(
-    html: &str,
-    _strip_links: bool,
-    _strip_images: bool,
-) -> String {
+pub fn to_markdown_with_options(html: &str, _strip_links: bool, _strip_images: bool) -> String {
     html2md::rewrite_html(html, true)
 }

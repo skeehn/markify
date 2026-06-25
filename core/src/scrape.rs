@@ -4,15 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use tracing::{debug, info};
 
-use crate::cache::{MarkifyCache, CacheConfig};
+use crate::cache::{CacheConfig, MarkifyCache};
 use crate::extract::{
-    ExtractionMode, Metadata, LinkInfo,
-    readability::extract_article,
-    metadata::extract_metadata,
-    links::extract_links,
+    links::extract_links, metadata::extract_metadata, readability::extract_article, ExtractionMode,
+    LinkInfo, Metadata,
 };
-use crate::fetch::{FetchConfig, FetchRouter, router::FetchEngine};
-use crate::transform::{OutputFormat, markdown::to_markdown, json::to_structured_json};
+use crate::fetch::{router::FetchEngine, FetchConfig, FetchRouter};
+use crate::transform::{json::to_structured_json, markdown::to_markdown, OutputFormat};
 
 /// Request to scrape a URL
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,6 +109,13 @@ pub struct Markify {
     fetch_config: FetchConfig,
 }
 
+impl Default for Markify {
+    /// Zero-config client using default fetch + cache settings.
+    fn default() -> Self {
+        Self::new(FetchConfig::default(), CacheConfig::default())
+    }
+}
+
 impl Markify {
     pub fn new(fetch_config: FetchConfig, cache_config: CacheConfig) -> Self {
         Self {
@@ -121,7 +126,10 @@ impl Markify {
     }
 
     /// Scrape a single URL
-    pub async fn scrape(&self, request: ScrapeRequest) -> anyhow::Result<(ScrapeResult, ScrapeMeta)> {
+    pub async fn scrape(
+        &self,
+        request: ScrapeRequest,
+    ) -> anyhow::Result<(ScrapeResult, ScrapeMeta)> {
         let total_start = Instant::now();
 
         // Check cache
@@ -129,19 +137,25 @@ impl Markify {
         if let Some(cached) = self.cache.get(&cache_key).await {
             debug!(url = %request.url, "Cache hit");
             let cached_result: ScrapeResult = serde_json::from_slice(&cached.data)?;
-            return Ok((cached_result, ScrapeMeta {
-                cached: true,
-                engine: "http".to_string(),
-                fetch_ms: 0,
-                extract_ms: 0,
-                total_ms: total_start.elapsed().as_millis() as u64,
-            }));
+            return Ok((
+                cached_result,
+                ScrapeMeta {
+                    cached: true,
+                    engine: "http".to_string(),
+                    fetch_ms: 0,
+                    extract_ms: 0,
+                    total_ms: total_start.elapsed().as_millis() as u64,
+                },
+            ));
         }
 
         // Fetch
         let fetch_start = Instant::now();
-        let timeout_ms = request.timeout_ms.unwrap_or(self.fetch_config.timeout_secs * 1000);
-        let (page, engine) = self.fetch_router
+        let timeout_ms = request
+            .timeout_ms
+            .unwrap_or(self.fetch_config.timeout_secs * 1000);
+        let (page, engine) = self
+            .fetch_router
             .fetch(
                 &request.url,
                 request.wait_for_selector.as_deref(),
@@ -163,21 +177,24 @@ impl Markify {
         let (markdown, content_structured) = match &request.mode {
             ExtractionMode::Article => {
                 let article = extract_article(html);
-                let md = article.as_ref()
+                let md = article
+                    .as_ref()
                     .and_then(|a| a.content.clone())
                     .unwrap_or_else(|| to_markdown(html));
-                (Some(md), article.as_ref().and_then(|a| a.structured.clone()))
+                (
+                    Some(md),
+                    article.as_ref().and_then(|a| a.structured.clone()),
+                )
             }
             ExtractionMode::Full => {
                 let md = to_markdown(html);
                 (Some(md), None)
             }
-            ExtractionMode::Metadata => {
-                (None, None)
-            }
+            ExtractionMode::Metadata => (None, None),
             ExtractionMode::Links => {
                 let links = extract_links(html, base_url);
-                let md = links.iter()
+                let md = links
+                    .iter()
                     .map(|l| format!("[{}]({})", l.text, l.url))
                     .collect::<Vec<_>>()
                     .join("\n");
@@ -240,7 +257,11 @@ impl Markify {
             extracted: content_structured,
             metadata: Some(metadata),
             links,
-            raw_html: if request.include_raw_html { Some(page.html) } else { None },
+            raw_html: if request.include_raw_html {
+                Some(page.html)
+            } else {
+                None
+            },
             error: None,
         };
 

@@ -4,6 +4,7 @@
 
 Scrape, search, extract, and structure web data — faster than anything else. Apache 2.0-licensed, Rust-native, MCP-first. Available as a single binary or managed cloud.
 
+[![CI](https://github.com/skeehn/markify/actions/workflows/ci.yml/badge.svg)](https://github.com/skeehn/markify/actions/workflows/ci.yml)
 [![Apache-2.0](https://img.shields.io/badge/Apache--2.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![MCP](https://img.shields.io/badge/MCP-Server-purple.svg)](https://modelcontextprotocol.io/)
@@ -40,14 +41,14 @@ SERPER_API_KEY=your_key markify mcp
 
 ```bash
 # Docker
-docker run -p 3000:3000 -e SERPER_API_KEY=your_key nexis/nexis
+docker run -p 3000:3000 -e SERPER_API_KEY=your_key skeehn/markify
 ```
 
 ## Demo
 
 ```bash
 # Run the full YC/Antler demo (3 use cases in <5 min)
-NEXIS_API_URL=http://localhost:3000 bash demo.sh
+MARKIFY_API_URL=http://localhost:3000 bash demo.sh
 ```
 
 ## API Endpoints
@@ -82,8 +83,8 @@ curl -X POST http://localhost:3000/v1/search \
 ```json
 {
   "mcpServers": {
-    "nexis": {
-      "command": "nexis",
+    "markify": {
+      "command": "markify",
       "args": ["mcp"],
       "env": {
         "SERPER_API_KEY": "your_key"

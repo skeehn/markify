@@ -21,7 +21,7 @@ impl Default for CacheConfig {
     fn default() -> Self {
         Self {
             max_capacity: 10_000,
-            ttl: Duration::from_secs(3600), // 1 hour
+            ttl: Duration::from_secs(3600),       // 1 hour
             tti: Some(Duration::from_secs(1800)), // 30 min idle
         }
     }
