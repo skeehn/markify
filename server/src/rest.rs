@@ -80,7 +80,8 @@ pub fn create_router() -> Router {
         exa: exa_client,
         cilow: cilow_client,
         telemetry: Telemetry::new(),
-        api_specs: Arc::new(RwLock::new(HashMap::new())),
+        // Load any previously-generated API specs from disk so they survive restarts.
+        api_specs: Arc::new(RwLock::new(markify_core::structured_api::store::load_all())),
         sparse_index: Arc::new(RwLock::new(
             SparseIndex::new_in_memory().expect("Failed to create sparse index"),
         )),
@@ -527,10 +528,11 @@ async fn generate_api_handler(
     {
         Ok(spec) => {
             let id = spec.id.clone();
-            // Store the spec
+            // Store the spec in memory and persist it to disk so it survives restarts.
             if let Ok(mut specs) = state.api_specs.write() {
                 specs.insert(id.clone(), spec.clone());
             }
+            markify_core::structured_api::store::save_spec(&spec);
 
             (
                 StatusCode::OK,

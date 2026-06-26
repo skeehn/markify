@@ -16,6 +16,7 @@ pub mod extraction;
 pub mod generator;
 pub mod llm;
 pub mod spec;
+pub mod store;
 
 pub use executor::execute_api_spec;
 pub use generator::generate_api_spec;

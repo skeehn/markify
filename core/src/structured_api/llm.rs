@@ -96,18 +96,26 @@ fn default_type() -> String {
     "string".to_string()
 }
 
-/// Ask the LLM to produce extraction rules for `description` against `html`.
-pub async fn generate_endpoint_via_llm(
+/// A single LLM call producing extraction rules. `feedback` from a prior failed
+/// attempt is injected so the model can self-correct.
+async fn call_llm(
     html: &str,
     description: &str,
     config: &LlmConfig,
+    feedback: Option<&str>,
 ) -> anyhow::Result<Endpoint> {
     let sample = compact_html(html, 14_000);
+    let feedback_block = match feedback {
+        Some(f) => {
+            format!("\n\nYour previous attempt had problems:\n{f}\nProduce corrected selectors.\n")
+        }
+        None => String::new(),
+    };
 
     let system = "You convert a web page into precise CSS-selector extraction rules. \
 You always respond with a single JSON object and no prose.";
     let user = format!(
-        "The user wants to extract: \"{description}\"\n\n\
+        "The user wants to extract: \"{description}\"{feedback_block}\n\n\
 Here is the page HTML (may be truncated):\n```html\n{sample}\n```\n\n\
 Respond with ONLY this JSON object:\n\
 {{\n\
@@ -197,6 +205,77 @@ Rules: for a list of repeating items set returns_list=true, give container_selec
         },
         returns_list: llm_spec.returns_list,
     })
+}
+
+/// Generate extraction rules, retrying once with concrete feedback if the first
+/// attempt's selectors don't actually extract anything from the page.
+pub async fn generate_endpoint_via_llm(
+    html: &str,
+    description: &str,
+    config: &LlmConfig,
+) -> anyhow::Result<Endpoint> {
+    let first = call_llm(html, description, config, None).await?;
+    let (items, missing) = validate(html, &first);
+    if items > 0 && missing.is_empty() {
+        return Ok(first);
+    }
+
+    // Retry once, telling the model exactly what failed.
+    let feedback = build_feedback(&first, items, &missing);
+    debug!(
+        items,
+        ?missing,
+        "first LLM attempt incomplete; retrying with feedback"
+    );
+    let second = match call_llm(html, description, config, Some(&feedback)).await {
+        Ok(ep) => ep,
+        Err(_) => return Ok(first),
+    };
+    let (items2, _) = validate(html, &second);
+    if items2 >= items.max(1) {
+        Ok(second)
+    } else {
+        Ok(first)
+    }
+}
+
+/// Run the endpoint against the HTML and report (#rows extracted, fields that
+/// extracted nothing). Synchronous — the parsed document never crosses an await.
+fn validate(html: &str, endpoint: &Endpoint) -> (usize, Vec<String>) {
+    let rows = crate::structured_api::executor::extract_from_html(html, endpoint);
+    let items = rows.len();
+    let mut missing = Vec::new();
+    for rule in &endpoint.extraction_rules {
+        let present = rows.iter().any(|r| r.get(&rule.field).is_some());
+        if !present {
+            missing.push(rule.field.clone());
+        }
+    }
+    (items, missing)
+}
+
+/// Build concrete, actionable feedback for a retry.
+fn build_feedback(endpoint: &Endpoint, items: usize, missing: &[String]) -> String {
+    let mut parts = Vec::new();
+    match &endpoint.container_selector {
+        Some(c) => parts.push(format!(
+            "- container_selector \"{c}\" matched {items} item(s)"
+        )),
+        None => parts.push(format!("- the extraction produced {items} item(s)")),
+    }
+    if !missing.is_empty() {
+        parts.push(format!(
+            "- these fields extracted nothing (their selectors are wrong): {}",
+            missing.join(", ")
+        ));
+    }
+    if items == 0 {
+        parts.push(
+            "- the selectors match no elements; use selectors that actually appear in the HTML"
+                .to_string(),
+        );
+    }
+    parts.join("\n")
 }
 
 /// Strip `<script>`/`<style>` blocks and take the first `max` chars so the model

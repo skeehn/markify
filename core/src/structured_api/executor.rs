@@ -67,6 +67,14 @@ fn execute_endpoint(document: &Html, endpoint: &Endpoint) -> Vec<serde_json::Val
     }
 }
 
+/// Parse `html` and run an endpoint's extraction rules against it. Synchronous
+/// (the parsed document never crosses an await), so it is safe to call for
+/// validation between LLM retries. Returns the extracted rows.
+pub fn extract_from_html(html: &str, endpoint: &Endpoint) -> Vec<serde_json::Value> {
+    let document = Html::parse_document(html);
+    execute_endpoint(&document, endpoint)
+}
+
 /// Extract a list of objects from repeating container elements.
 ///
 /// Uses `endpoint.container_selector` to find each repeating item, then applies
