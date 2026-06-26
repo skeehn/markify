@@ -67,36 +67,45 @@ fn execute_endpoint(document: &Html, endpoint: &Endpoint) -> Vec<serde_json::Val
     }
 }
 
-/// Extract a list of objects from repeating elements.
+/// Extract a list of objects from repeating container elements.
+///
+/// Uses `endpoint.container_selector` to find each repeating item, then applies
+/// each field rule *relative to* that container. Falls back to the legacy
+/// behaviour (the first rule's selector as the container) for older specs that
+/// predate `container_selector`.
 fn extract_list(document: &Html, endpoint: &Endpoint) -> Vec<serde_json::Value> {
     let mut results = Vec::new();
 
-    // Find all matching container elements
-    let mut containers = Vec::new();
-    for rule in &endpoint.extraction_rules {
-        if let Ok(sel) = Selector::parse(&rule.selector) {
-            for elem in document.select(&sel) {
-                containers.push(elem);
-            }
-        }
-    }
-
-    if containers.is_empty() {
+    let container_sel_str = endpoint.container_selector.clone().or_else(|| {
+        endpoint
+            .extraction_rules
+            .first()
+            .map(|r| r.selector.clone())
+    });
+    let Some(container_sel_str) = container_sel_str else {
         return results;
-    }
+    };
+    let Ok(container_sel) = Selector::parse(&container_sel_str) else {
+        return results;
+    };
 
-    // For each container, extract fields
-    for container in containers {
+    for container in document.select(&container_sel) {
         let mut obj = serde_json::Map::new();
 
         for rule in &endpoint.extraction_rules {
-            if let Ok(sel) = Selector::parse(&rule.selector) {
-                // Try to find matching element within container
-                if let Some(element) = container.select(&sel).next() {
-                    let value = extract_from_element(&element, rule, &sel);
-                    if let Some(v) = value {
-                        obj.insert(rule.field.clone(), v);
-                    }
+            let Ok(sel) = Selector::parse(&rule.selector) else {
+                continue;
+            };
+            // Field selectors are relative to the container item; if a rule
+            // targets the container element itself (e.g. the item *is* the
+            // link), use the container.
+            let element = container
+                .select(&sel)
+                .next()
+                .or_else(|| match_self(container, &rule.selector, &container_sel_str));
+            if let Some(element) = element {
+                if let Some(v) = extract_from_element(&element, rule, &sel) {
+                    obj.insert(rule.field.clone(), v);
                 }
             }
         }
@@ -107,6 +116,19 @@ fn extract_list(document: &Html, endpoint: &Endpoint) -> Vec<serde_json::Value> 
     }
 
     results
+}
+
+/// When a field rule targets the container element itself, return the container.
+fn match_self<'a>(
+    container: scraper::ElementRef<'a>,
+    rule_selector: &str,
+    container_selector: &str,
+) -> Option<scraper::ElementRef<'a>> {
+    if rule_selector == container_selector || rule_selector.trim() == ":scope" {
+        Some(container)
+    } else {
+        None
+    }
 }
 
 /// Extract a single object from the document.
@@ -154,6 +176,12 @@ fn extract_from_element(
         "src" => element
             .value()
             .attr("src")
+            .map(|v| serde_json::Value::String(v.to_string())),
+        // `content` (e.g. <meta property="og:title" content="...">) is a very
+        // common extraction target, so support it directly alongside attr:name.
+        "content" => element
+            .value()
+            .attr("content")
             .map(|v| serde_json::Value::String(v.to_string())),
         "html" => {
             let html = element.html();

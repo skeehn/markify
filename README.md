@@ -67,6 +67,9 @@ MARKIFY_API_URL=http://127.0.0.1:3000 bash demo.sh
 | `POST` | `/v1/search` | Query → search results (optionally scraped) |
 | `POST` | `/v1/batch` | Multiple URLs → batch results |
 | `GET` | `/v1/metadata` | URL → OG tags, title, description |
+| `POST` | `/v1/generate` | **Web → API**: URL + plain-English description → a reusable extraction API |
+| `POST` | `/v1/apis/:id/execute` | Run a generated API → structured JSON |
+| `GET` | `/v1/apis` | List generated APIs |
 | `GET` | `/v1/health` | Health + real-time telemetry |
 | `POST` | `/api/convert` | Legacy: HTML string → Markdown |
 
@@ -85,6 +88,34 @@ curl -X POST http://127.0.0.1:3000/v1/search \
   -H "Content-Type: application/json" \
   -d '{"query":"Rust web framework","scrape_results":true}'
 ```
+
+### Example: Turn any page into a typed API (parse.bot-style)
+
+Describe what you want in plain English. markify uses an LLM to write precise
+CSS-selector extraction rules **once**, validates them against the live page,
+then every run is deterministic and fast (no LLM call). Set `OPENROUTER_API_KEY`
+(or `OPENAI_API_KEY` / `MARKIFY_LLM_API_KEY`); without a key it falls back to
+structural heuristics.
+
+```bash
+# 1. Generate a reusable API from a URL + a natural-language description
+curl -X POST http://127.0.0.1:3000/v1/generate \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://news.ycombinator.com","description":"each story title and its URL"}'
+# → { "api": { "id": "<id>", "endpoints": [{
+#       "container_selector": "tr.athing.submission",
+#       "extraction_rules": [
+#         {"field":"title","selector":"td.title span.titleline a","extract":"text"},
+#         {"field":"url","selector":"td.title span.titleline a","extract":"href"} ] }] } }
+
+# 2. Run it — deterministic CSS extraction, no LLM
+curl -X POST http://127.0.0.1:3000/v1/apis/<id>/execute \
+  -H "Content-Type: application/json" -d '{}'
+# → [ {"title":"Om Malik has died","url":"https://om.co/..."}, ... ]   (30 items)
+```
+
+The generated spec is saved (`GET /v1/apis`) and reusable across pages with the
+same structure. Field `extract` modes: `text`, `href`, `src`, `content`, `attr:NAME`.
 
 ### Example: MCP Config (Claude Desktop)
 

@@ -34,6 +34,11 @@ pub struct Endpoint {
     pub name: String,
     /// Description of what this endpoint extracts
     pub description: String,
+    /// For list endpoints: a CSS selector matching each repeating item. Field
+    /// rules are then applied *relative to* each matched container element.
+    /// `None` for single-object endpoints (rules are page-absolute).
+    #[serde(default)]
+    pub container_selector: Option<String>,
     /// CSS selectors or extraction rules
     pub extraction_rules: Vec<ExtractionRule>,
     /// Expected output type

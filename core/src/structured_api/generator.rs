@@ -5,8 +5,9 @@
 //! - Content blocks (article body, product details)
 //! - Tables and structured data
 //!
-//! For LLM-powered generation, this module would call an LLM with the page
-//! structure and user description. The heuristic approach provides a fast baseline.
+//! For request-specific extraction it calls an LLM (see `llm.rs`) to produce the
+//! exact CSS selectors for the user's description, validated against the live
+//! page. The heuristic strategies below are the no-key fallback.
 
 use std::time::Instant;
 
@@ -40,10 +41,36 @@ pub async fn generate_api_spec(
     let html = result
         .raw_html
         .ok_or_else(|| anyhow::anyhow!("No raw HTML available"))?;
-    let document = Html::parse_document(&html);
+    // The parse.bot magic: ask an LLM for request-specific extraction rules.
+    // Do this BEFORE building the (non-Send) HTML document so the async future
+    // stays Send across the await. Falls back to heuristics on no-key/failure.
+    let llm_endpoint = match (
+        description,
+        crate::structured_api::llm::LlmConfig::from_env(),
+    ) {
+        (Some(desc), Some(config)) => {
+            match crate::structured_api::llm::generate_endpoint_via_llm(&html, desc, &config).await
+            {
+                Ok(endpoint) => Some(endpoint),
+                Err(e) => {
+                    tracing::warn!(error = %e, "LLM rule generation failed; using heuristics");
+                    None
+                }
+            }
+        }
+        _ => None,
+    };
 
-    // Analyze page structure and generate extraction rules
-    let endpoints = analyze_page_structure(&document, description);
+    // Everything below is synchronous (no awaits): parse the document, validate
+    // the LLM's selectors against it, and fall back to heuristics if they miss.
+    let document = Html::parse_document(&html);
+    let endpoints = match llm_endpoint {
+        Some(endpoint) if count_container_matches(&document, &endpoint) > 0 => {
+            tracing::debug!("using LLM-generated extraction rules");
+            vec![endpoint]
+        }
+        _ => analyze_page_structure(&document, description),
+    };
 
     // Generate response schema from endpoints
     let response_schema = generate_response_schema(&endpoints);
@@ -67,6 +94,23 @@ pub async fn generate_api_spec(
         created_at: chrono::Utc::now(),
         status: ApiStatus::Completed,
     })
+}
+
+/// How many elements the endpoint's container (or first field) selector matches.
+fn count_container_matches(document: &Html, endpoint: &Endpoint) -> usize {
+    let sel_str = endpoint.container_selector.clone().or_else(|| {
+        endpoint
+            .extraction_rules
+            .first()
+            .map(|r| r.selector.clone())
+    });
+    let Some(sel_str) = sel_str else {
+        return 0;
+    };
+    match scraper::Selector::parse(&sel_str).ok() {
+        Some(sel) => document.select(&sel).count(),
+        None => 0,
+    }
 }
 
 /// Analyze the page structure and generate extraction endpoints.
@@ -120,6 +164,7 @@ fn find_repeating_lists(document: &Html) -> Option<Endpoint> {
                 let rules = extract_item_structure(&items);
                 if !rules.is_empty() {
                     return Some(Endpoint {
+                        container_selector: None,
                         name: "list_items".to_string(),
                         description: format!("Extract {} repeating items", items.len()),
                         extraction_rules: rules,
@@ -180,6 +225,7 @@ fn find_article_content(document: &Html) -> Option<Endpoint> {
                 ];
 
                 return Some(Endpoint {
+                    container_selector: None,
                     name: "get_article".to_string(),
                     description: "Extract article content".to_string(),
                     extraction_rules: rules,
@@ -206,6 +252,7 @@ fn find_tables(document: &Html) -> Option<Endpoint> {
             }];
 
             return Some(Endpoint {
+                container_selector: None,
                 name: "get_table".to_string(),
                 description: "Extract table data".to_string(),
                 extraction_rules: rules,
@@ -234,6 +281,7 @@ fn find_card_grids(document: &Html) -> Option<Endpoint> {
                 let rules = extract_item_structure(&items);
                 if !rules.is_empty() {
                     return Some(Endpoint {
+                        container_selector: None,
                         name: "list_cards".to_string(),
                         description: format!("Extract {} card items", items.len()),
                         extraction_rules: rules,
@@ -251,6 +299,7 @@ fn find_card_grids(document: &Html) -> Option<Endpoint> {
 /// Generic page extraction fallback.
 fn generic_page_extraction(_document: &Html) -> Endpoint {
     Endpoint {
+        container_selector: None,
         name: "get_page".to_string(),
         description: "Extract page content".to_string(),
         extraction_rules: vec![
