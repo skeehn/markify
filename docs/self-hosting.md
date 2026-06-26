@@ -141,7 +141,7 @@ server {
     server_name markify.example.com;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -151,7 +151,7 @@ server {
 **Caddy (automatic HTTPS):**
 ```
 markify.example.com {
-    reverse_proxy localhost:3000
+    reverse_proxy 127.0.0.1:3000
 }
 ```
 

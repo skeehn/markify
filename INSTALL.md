@@ -26,7 +26,7 @@ cd markify
 docker compose up -d
 
 # Test it works
-curl http://localhost:3000/v1/health
+curl http://127.0.0.1:3000/v1/health
 
 # With API keys
 docker compose --env-file .env up -d
@@ -55,10 +55,10 @@ markify --version
 markify server &
 
 # Health check
-curl http://localhost:3000/v1/health
+curl http://127.0.0.1:3000/v1/health
 
 # Scrape a URL
-curl -X POST http://localhost:3000/v1/scrape \
+curl -X POST http://127.0.0.1:3000/v1/scrape \
   -H "Content-Type: application/json" \
   -d '{"url":"https://example.com","mode":"smart"}'
 ```

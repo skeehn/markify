@@ -45,7 +45,7 @@ cargo build --release
 ## Verify it works
 
 ```bash
-curl http://localhost:3000/v1/health
+curl http://127.0.0.1:3000/v1/health
 ```
 
 Expected:
@@ -58,7 +58,7 @@ Expected:
 ### Scrape a URL
 
 ```bash
-curl -X POST http://localhost:3000/v1/scrape \
+curl -X POST http://127.0.0.1:3000/v1/scrape \
   -H "Content-Type: application/json" \
   -d '{"url":"https://en.wikipedia.org/wiki/Web_scraping","mode":"article"}'
 ```
@@ -66,7 +66,7 @@ curl -X POST http://localhost:3000/v1/scrape \
 ### Search the web
 
 ```bash
-curl -X POST http://localhost:3000/v1/search \
+curl -X POST http://127.0.0.1:3000/v1/search \
   -H "Content-Type: application/json" \
   -d '{"query":"Rust web framework","num_results":5,"scrape_results":true}'
 ```
@@ -74,13 +74,13 @@ curl -X POST http://localhost:3000/v1/search \
 ### Get metadata
 
 ```bash
-curl "http://localhost:3000/v1/metadata?url=https://github.com"
+curl "http://127.0.0.1:3000/v1/metadata?url=https://github.com"
 ```
 
 ### Batch scrape
 
 ```bash
-curl -X POST http://localhost:3000/v1/batch \
+curl -X POST http://127.0.0.1:3000/v1/batch \
   -H "Content-Type: application/json" \
   -d '{"urls":["https://example.com","https://httpbin.org/html"]}'
 ```
@@ -94,7 +94,7 @@ pip install -e sdks/python
 ```python
 from markify import Markify
 
-client = Markify(base_url="http://localhost:3000")
+client = Markify(base_url="http://127.0.0.1:3000")
 
 # Scrape
 result = client.scrape("https://en.wikipedia.org/wiki/Web_scraping", mode="article")
@@ -118,7 +118,7 @@ cd sdks/typescript && npm install
 ```typescript
 import { Markify } from 'markify';
 
-const client = new Markify({ baseUrl: 'http://localhost:3000' });
+const client = new Markify({ baseUrl: 'http://127.0.0.1:3000' });
 
 const result = await client.scrape('https://en.wikipedia.org/wiki/Web_scraping');
 console.log(result.markdown);

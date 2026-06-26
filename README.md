@@ -48,7 +48,7 @@ docker run -p 3000:3000 -e SERPER_API_KEY=your_key skeehn/markify
 
 ```bash
 # Run the full YC/Antler demo (3 use cases in <5 min)
-MARKIFY_API_URL=http://localhost:3000 bash demo.sh
+MARKIFY_API_URL=http://127.0.0.1:3000 bash demo.sh
 ```
 
 ## API Endpoints
@@ -65,7 +65,7 @@ MARKIFY_API_URL=http://localhost:3000 bash demo.sh
 ### Example: Scrape a URL
 
 ```bash
-curl -X POST http://localhost:3000/v1/scrape \
+curl -X POST http://127.0.0.1:3000/v1/scrape \
   -H "Content-Type: application/json" \
   -d '{"url":"https://en.wikipedia.org/wiki/Web_scraping","mode":"article","include_links":true}'
 ```
@@ -73,7 +73,7 @@ curl -X POST http://localhost:3000/v1/scrape \
 ### Example: Search + Scrape in One Call
 
 ```bash
-curl -X POST http://localhost:3000/v1/search \
+curl -X POST http://127.0.0.1:3000/v1/search \
   -H "Content-Type: application/json" \
   -d '{"query":"Rust web framework","scrape_results":true}'
 ```
@@ -103,7 +103,7 @@ Now Claude/Cursor/Windsurf can use Markify tools directly: `markify_scrape`, `ma
 ```python
 from markify import Markify
 
-client = Markify(base_url="http://localhost:3000")
+client = Markify(base_url="http://127.0.0.1:3000")
 
 # Scrape
 result = client.scrape("https://example.com", mode="article")
@@ -121,7 +121,7 @@ pages = client.batch(["https://example.com", "https://httpbin.org/html"])
 ```typescript
 import { Markify } from 'markify';
 
-const client = new Markify({ baseUrl: 'http://localhost:3000' });
+const client = new Markify({ baseUrl: 'http://127.0.0.1:3000' });
 const result = await client.scrape('https://example.com');
 console.log(result.markdown);
 ```
@@ -136,7 +136,7 @@ loader = MarkifyLoader(urls=["https://example.com"], mode="article")
 docs = loader.load()
 
 # Tool (for agents)
-tool = MarkifyTool(api_url="http://localhost:3000")
+tool = MarkifyTool(api_url="http://127.0.0.1:3000")
 content = tool.invoke({"url": "https://example.com"})
 ```
 

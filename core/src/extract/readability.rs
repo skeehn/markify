@@ -29,7 +29,9 @@ pub fn extract_article(html: &str) -> Option<ExtractedContent> {
                 "Article extracted successfully"
             );
 
-            let content = article.text_content.to_string();
+            // text_content is the clean article prose. Strip "[edit]" section
+            // markers that wikis (e.g. Wikipedia) leak into the extracted text.
+            let content = article.text_content.to_string().replace("[edit]", "");
             let title = article.title.clone();
             let byline = article.byline.clone();
             let excerpt = article.excerpt.clone();

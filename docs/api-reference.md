@@ -1,6 +1,6 @@
 # API Reference
 
-Base URL: `http://localhost:3000`
+Base URL: `http://127.0.0.1:3000`
 
 ## Endpoints
 

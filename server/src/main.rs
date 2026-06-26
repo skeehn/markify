@@ -22,7 +22,9 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    /// Bind address (default: 0.0.0.0:3000)
+    /// Bind address (default: 0.0.0.0:3000 — all IPv4 interfaces). Connect with
+    /// `127.0.0.1` rather than `localhost`: on macOS `localhost` resolves to
+    /// IPv6 `::1` first, which this IPv4 bind does not serve.
     #[arg(long, default_value = "0.0.0.0:3000")]
     bind: String,
 

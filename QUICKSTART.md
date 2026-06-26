@@ -35,7 +35,7 @@ Markify server starting on http://0.0.0.0:3000
 ## Step 3: Scrape Your First URL (30 seconds)
 
 ```bash
-curl -X POST http://localhost:3000/v1/scrape \
+curl -X POST http://127.0.0.1:3000/v1/scrape \
   -H "Content-Type: application/json" \
   -d '{"url":"https://example.com","mode":"smart"}'
 ```
@@ -55,7 +55,7 @@ Response:
 ## Step 4: Search the Web (30 seconds)
 
 ```bash
-curl -X POST http://localhost:3000/v1/search \
+curl -X POST http://127.0.0.1:3000/v1/search \
   -H "Content-Type: application/json" \
   -d '{"query":"Rust programming","num_results":5,"scrape_results":true}'
 ```
@@ -63,7 +63,7 @@ curl -X POST http://localhost:3000/v1/search \
 ## Step 5: Get Structured Blocks (30 seconds)
 
 ```bash
-curl -X POST http://localhost:3000/v1/vsb \
+curl -X POST http://127.0.0.1:3000/v1/vsb \
   -H "Content-Type: application/json" \
   -d '{"url":"https://en.wikipedia.org/wiki/Web_scraping","format":"both"}'
 ```
@@ -74,12 +74,12 @@ Returns the page segmented into semantic blocks (article, navigation, table, cod
 
 ```bash
 # Index some content first
-curl -X POST http://localhost:3000/v1/vsb \
+curl -X POST http://127.0.0.1:3000/v1/vsb \
   -H "Content-Type: application/json" \
   -d '{"url":"https://example.com","index":true}'
 
 # Then search with BM25 + HNSW fusion
-curl -X POST http://localhost:3000/v1/hybrid-search \
+curl -X POST http://127.0.0.1:3000/v1/hybrid-search \
   -H "Content-Type: application/json" \
   -d '{"query":"example domain","limit":5,"mode":"hybrid"}'
 ```
