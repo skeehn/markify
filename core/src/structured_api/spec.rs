@@ -41,6 +41,11 @@ pub struct Endpoint {
     pub container_selector: Option<String>,
     /// CSS selectors or extraction rules
     pub extraction_rules: Vec<ExtractionRule>,
+    /// Optional CSS selector for the "next page" link. When set and `max_pages`
+    /// > 1 at execution time, the executor follows it and aggregates results
+    /// across pages.
+    #[serde(default)]
+    pub next_page_selector: Option<String>,
     /// Expected output type
     pub output_type: OutputType,
     /// Whether this returns a list or a single object
@@ -127,4 +132,8 @@ pub struct ExecuteApiRequest {
     pub url: Option<String>,
     /// Input parameters (for parameterized endpoints)
     pub params: Option<serde_json::Value>,
+    /// Maximum number of pages to follow via the endpoint's `next_page_selector`
+    /// (default 1 = current page only; capped at 20).
+    #[serde(default)]
+    pub max_pages: Option<usize>,
 }

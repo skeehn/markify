@@ -165,6 +165,7 @@ fn find_repeating_lists(document: &Html) -> Option<Endpoint> {
                 if !rules.is_empty() {
                     return Some(Endpoint {
                         container_selector: None,
+                        next_page_selector: None,
                         name: "list_items".to_string(),
                         description: format!("Extract {} repeating items", items.len()),
                         extraction_rules: rules,
@@ -226,6 +227,7 @@ fn find_article_content(document: &Html) -> Option<Endpoint> {
 
                 return Some(Endpoint {
                     container_selector: None,
+                    next_page_selector: None,
                     name: "get_article".to_string(),
                     description: "Extract article content".to_string(),
                     extraction_rules: rules,
@@ -253,6 +255,7 @@ fn find_tables(document: &Html) -> Option<Endpoint> {
 
             return Some(Endpoint {
                 container_selector: None,
+                next_page_selector: None,
                 name: "get_table".to_string(),
                 description: "Extract table data".to_string(),
                 extraction_rules: rules,
@@ -282,6 +285,7 @@ fn find_card_grids(document: &Html) -> Option<Endpoint> {
                 if !rules.is_empty() {
                     return Some(Endpoint {
                         container_selector: None,
+                        next_page_selector: None,
                         name: "list_cards".to_string(),
                         description: format!("Extract {} card items", items.len()),
                         extraction_rules: rules,
@@ -300,6 +304,7 @@ fn find_card_grids(document: &Html) -> Option<Endpoint> {
 fn generic_page_extraction(_document: &Html) -> Endpoint {
     Endpoint {
         container_selector: None,
+        next_page_selector: None,
         name: "get_page".to_string(),
         description: "Extract page content".to_string(),
         extraction_rules: vec![

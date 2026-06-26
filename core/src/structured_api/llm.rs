@@ -76,6 +76,8 @@ struct LlmSpec {
     returns_list: bool,
     #[serde(default)]
     container_selector: Option<String>,
+    #[serde(default)]
+    next_page_selector: Option<String>,
     fields: Vec<LlmField>,
 }
 
@@ -122,11 +124,12 @@ Respond with ONLY this JSON object:\n\
   \"name\": \"short_snake_case_name\",\n\
   \"returns_list\": true or false,\n\
   \"container_selector\": \"a CSS selector matching each repeating item, or null\",\n\
+  \"next_page_selector\": \"a CSS selector for the link to the NEXT page of results, or null\",\n\
   \"fields\": [\n\
     {{\"field\": \"output_name\", \"selector\": \"CSS selector (relative to the container item when returns_list is true)\", \"extract\": \"text | href | src | attr:NAME\", \"type\": \"string | number | url | date\"}}\n\
   ]\n\
 }}\n\
-Rules: for a list of repeating items set returns_list=true, give container_selector for the repeating element, and make every field selector RELATIVE to that container. For a single record set returns_list=false and container_selector=null with page-absolute field selectors. Use specific, stable selectors that actually appear in the HTML. For links use extract \"href\". Output JSON only."
+Rules: for a list of repeating items set returns_list=true, give container_selector for the repeating element, and make every field selector RELATIVE to that container. For a single record set returns_list=false and container_selector=null with page-absolute field selectors. Set next_page_selector to the pagination/\"More\"/\"Next\" link if the page has one, else null. Use specific, stable selectors that actually appear in the HTML. For links use extract \"href\". Output JSON only."
     );
 
     let client = reqwest::Client::new();
@@ -197,6 +200,7 @@ Rules: for a list of repeating items set returns_list=true, give container_selec
         name,
         description: description.to_string(),
         container_selector: llm_spec.container_selector.filter(|s| !s.is_empty()),
+        next_page_selector: llm_spec.next_page_selector.filter(|s| !s.is_empty()),
         extraction_rules: rules,
         output_type: if llm_spec.returns_list {
             OutputType::List
@@ -278,12 +282,23 @@ fn build_feedback(endpoint: &Endpoint, items: usize, missing: &[String]) -> Stri
     parts.join("\n")
 }
 
-/// Strip `<script>`/`<style>` blocks and take the first `max` chars so the model
-/// sees page structure (tags + class names) rather than JS/CSS blobs.
+/// Strip `<script>`/`<style>` blocks and budget `max` chars across the page.
+///
+/// When the page is longer than `max` we keep the HEAD (structure + first items)
+/// AND a slice of the TAIL — pagination / "next page" / footer-nav links almost
+/// always live at the bottom of a listing, so a head-only sample would hide them.
 fn compact_html(html: &str, max: usize) -> String {
     let no_script = strip_blocks(html, "<script", "</script>");
     let no_style = strip_blocks(&no_script, "<style", "</style>");
-    no_style.chars().take(max).collect()
+    let chars: Vec<char> = no_style.chars().collect();
+    if chars.len() <= max {
+        return chars.into_iter().collect();
+    }
+    let tail_len = max / 4;
+    let head_len = max - tail_len;
+    let head: String = chars[..head_len].iter().collect();
+    let tail: String = chars[chars.len() - tail_len..].iter().collect();
+    format!("{head}\n<!-- … truncated … -->\n{tail}")
 }
 
 fn strip_blocks(input: &str, open: &str, close: &str) -> String {

@@ -9,15 +9,18 @@ use crate::structured_api::spec::*;
 use crate::{ExtractionMode, OutputFormat, ScrapeRequest};
 
 /// Execute an API spec against a URL.
+///
+/// When `max_pages > 1` and the endpoint has a `next_page_selector`, the executor
+/// follows that link from page to page and aggregates rows across all pages
+/// (capped at 20 pages). `max_pages = 1` (the default) extracts the single page.
 pub async fn execute_api_spec(
     spec: &ApiSpec,
     endpoint_name: &str,
     markify: &Markify,
     override_url: Option<&str>,
+    max_pages: usize,
 ) -> anyhow::Result<ExecutionResult> {
     let start = Instant::now();
-
-    let url = override_url.unwrap_or(&spec.url);
 
     // Find the endpoint
     let endpoint = spec
@@ -26,24 +29,50 @@ pub async fn execute_api_spec(
         .find(|e| e.name == endpoint_name)
         .ok_or_else(|| anyhow::anyhow!("Endpoint '{}' not found in API spec", endpoint_name))?;
 
-    // Scrape the page
-    let (result, _) = markify
-        .scrape(ScrapeRequest {
-            url: url.to_string(),
-            formats: vec![OutputFormat::Both],
-            mode: ExtractionMode::Full,
-            include_raw_html: true,
-            ..Default::default()
-        })
-        .await?;
+    let max_pages = max_pages.clamp(1, 20);
+    let first_url = override_url.unwrap_or(&spec.url).to_string();
 
-    let html = result
-        .raw_html
-        .ok_or_else(|| anyhow::anyhow!("No raw HTML available"))?;
-    let document = Html::parse_document(&html);
+    let mut current_url = first_url.clone();
+    let mut data: Vec<serde_json::Value> = Vec::new();
+    let mut pages_fetched = 0usize;
 
-    // Execute extraction rules
-    let data = execute_endpoint(&document, endpoint);
+    loop {
+        pages_fetched += 1;
+
+        // Scrape the current page
+        let (result, _) = markify
+            .scrape(ScrapeRequest {
+                url: current_url.clone(),
+                formats: vec![OutputFormat::Both],
+                mode: ExtractionMode::Full,
+                include_raw_html: true,
+                ..Default::default()
+            })
+            .await?;
+
+        let html = result
+            .raw_html
+            .ok_or_else(|| anyhow::anyhow!("No raw HTML available"))?;
+
+        // Synchronous block: the non-Send parsed document is created, used, and
+        // dropped here so it never crosses the next `.await`.
+        let next_url = {
+            let document = Html::parse_document(&html);
+            data.extend(execute_endpoint(&document, endpoint));
+            endpoint
+                .next_page_selector
+                .as_deref()
+                .and_then(|sel| resolve_next_url(&document, sel, &current_url))
+        };
+
+        if pages_fetched >= max_pages {
+            break;
+        }
+        match next_url {
+            Some(next) if next != current_url => current_url = next,
+            _ => break,
+        }
+    }
 
     let execution_ms = start.elapsed().as_millis() as u64;
 
@@ -52,8 +81,17 @@ pub async fn execute_api_spec(
         endpoint: endpoint_name.to_string(),
         data,
         execution_ms,
-        source_url: url.to_string(),
+        source_url: first_url,
     })
+}
+
+/// Resolve the "next page" URL from `document` via `selector` (its `href`),
+/// joined against `base_url` so relative links become absolute.
+fn resolve_next_url(document: &Html, selector: &str, base_url: &str) -> Option<String> {
+    let sel = Selector::parse(selector).ok()?;
+    let href = document.select(&sel).next()?.value().attr("href")?;
+    let base = url::Url::parse(base_url).ok()?;
+    base.join(href).ok().map(|u| u.to_string())
 }
 
 /// Execute a single endpoint's extraction rules against a document.
@@ -207,5 +245,36 @@ fn extract_from_element(
                 .map(|v| serde_json::Value::String(v.to_string()))
         }
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod pagination_tests {
+    use super::*;
+
+    #[test]
+    fn resolves_relative_next_link_against_base() {
+        let html = r#"<html><body><a class="morelink" href="news?p=2">More</a></body></html>"#;
+        let doc = Html::parse_document(html);
+        let next = resolve_next_url(&doc, ".morelink", "https://news.ycombinator.com/news");
+        assert_eq!(
+            next.as_deref(),
+            Some("https://news.ycombinator.com/news?p=2")
+        );
+    }
+
+    #[test]
+    fn resolves_absolute_next_link() {
+        let html = r#"<a rel="next" href="https://example.com/page/3">Next</a>"#;
+        let doc = Html::parse_document(html);
+        let next = resolve_next_url(&doc, "a[rel=next]", "https://example.com/page/2");
+        assert_eq!(next.as_deref(), Some("https://example.com/page/3"));
+    }
+
+    #[test]
+    fn missing_next_link_returns_none() {
+        let html = r#"<html><body><p>last page</p></body></html>"#;
+        let doc = Html::parse_document(html);
+        assert!(resolve_next_url(&doc, ".morelink", "https://example.com/").is_none());
     }
 }

@@ -652,8 +652,15 @@ async fn execute_api_handler(
         );
     }
 
-    match markify_core::execute_api_spec(&spec, endpoint_name, &state.client, req.url.as_deref())
-        .await
+    let max_pages = req.max_pages.unwrap_or(1);
+    match markify_core::execute_api_spec(
+        &spec,
+        endpoint_name,
+        &state.client,
+        req.url.as_deref(),
+        max_pages,
+    )
+    .await
     {
         Ok(result) => (
             StatusCode::OK,
