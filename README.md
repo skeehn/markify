@@ -19,7 +19,7 @@ Scrape, search, extract, and structure web data — faster than anything else. A
 | **Self-Hosted** | **Single binary** | Docker compose | Limited |
 | **HTML parse** | **~6 KB/doc (streaming)** | full-DOM buffer | full-DOM buffer |
 | **Scrape** | ✅ | ✅ | ✅ |
-| **Search** | ✅ | ✅ (v2) | ✅ |
+| **Search** | **✅ keyless** (DuckDuckGo; Serper optional) | ✅ | ✅ |
 | **Search+Scrape** | **One call** | Two calls | Two calls |
 | **SDKs** | **Python/TS/Rust/Go** | Python/Node/Go | REST only |
 | **Integrations** | **LangChain/LlamaIndex** | LangChain | LangChain |
@@ -32,17 +32,25 @@ Markify is the **only** Apache 2.0-licensed, Rust-native, MCP-first platform tha
 # Install
 cargo install --path server
 
-# Start server
+# Start the server — scrape AND search work with NO API key
+# (search uses keyless DuckDuckGo by default; reach it at http://127.0.0.1:3000)
+markify server
+
+# Optional: set SERPER_API_KEY for Google-quality search (free tier at serper.dev)
 SERPER_API_KEY=your_key markify server
 
-# Or MCP for Claude/Cursor
-SERPER_API_KEY=your_key markify mcp
+# MCP for Claude/Cursor (also keyless)
+markify mcp
 ```
 
 ```bash
 # Docker
-docker run -p 3000:3000 -e SERPER_API_KEY=your_key skeehn/markify
+docker run -p 3000:3000 skeehn/markify
 ```
+
+> **No keys required.** Scraping needs nothing, and search falls back to keyless
+> DuckDuckGo — so `/v1/scrape` and `/v1/search` both work out of the box. Set
+> `SERPER_API_KEY` only if you want Google results instead of DuckDuckGo.
 
 ## Demo
 

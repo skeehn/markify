@@ -45,12 +45,17 @@ pub struct AppState {
 /// Create the Axum router with all API routes
 pub fn create_router() -> Router {
     let search_config = SearchConfig::default();
-    let search_client = if !search_config.api_key.is_empty() {
-        info!("Search enabled (Serper API key found)");
-        Some(SearchClient::new(search_config.api_key))
-    } else {
-        info!("Search disabled (set SERPER_API_KEY to enable)");
-        None
+    // Always available: Serper (Google) when SERPER_API_KEY is set, otherwise
+    // keyless DuckDuckGo HTML search so /v1/search works with no API key.
+    let search_client = {
+        let client = SearchClient::new(search_config.api_key);
+        match client.backend_name() {
+            "serper" => info!("Search enabled via Serper (Google)"),
+            _ => info!(
+                "Search enabled via DuckDuckGo (keyless; set SERPER_API_KEY for Google results)"
+            ),
+        }
+        Some(client)
     };
 
     // Exa neural search

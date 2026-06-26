@@ -36,10 +36,10 @@ impl SharedState {
     fn new() -> Self {
         let markify = Arc::new(Markify::new(FetchConfig::default(), CacheConfig::default()));
 
-        let search = std::env::var("SERPER_API_KEY")
-            .ok()
-            .filter(|k| !k.is_empty())
-            .map(|key| Arc::new(SearchClient::new(key)));
+        // Always available: keyless DuckDuckGo when no SERPER_API_KEY is set.
+        let search = Some(Arc::new(SearchClient::new(
+            std::env::var("SERPER_API_KEY").unwrap_or_default(),
+        )));
 
         Self { markify, search }
     }

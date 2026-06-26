@@ -46,30 +46,74 @@ struct SerperSearchParams {
     q: Option<String>,
 }
 
-/// Serper search client
+/// Which backend a [`SearchClient`] uses.
+#[derive(Debug, Clone)]
+pub enum SearchBackend {
+    /// Serper (Google results) — requires an API key.
+    Serper(String),
+    /// DuckDuckGo HTML — keyless, parsed from the public results page.
+    DuckDuckGo,
+}
+
+/// Web search client. Uses Serper (Google) when a `SERPER_API_KEY` is
+/// configured, otherwise falls back to **keyless** DuckDuckGo HTML search so
+/// `/v1/search` works out of the box with no API key.
 pub struct SearchClient {
     client: Client,
-    api_key: String,
-    base_url: String,
+    backend: SearchBackend,
 }
 
 impl SearchClient {
+    /// Build from a (possibly empty) Serper API key: a non-empty key uses
+    /// Serper, an empty key falls back to keyless DuckDuckGo.
     pub fn new(api_key: String) -> Self {
+        let backend = if api_key.trim().is_empty() {
+            SearchBackend::DuckDuckGo
+        } else {
+            SearchBackend::Serper(api_key)
+        };
         Self {
             client: Client::new(),
-            api_key,
-            base_url: "https://google.serper.dev".to_string(),
+            backend,
+        }
+    }
+
+    /// Keyless DuckDuckGo client.
+    pub fn duckduckgo() -> Self {
+        Self {
+            client: Client::new(),
+            backend: SearchBackend::DuckDuckGo,
+        }
+    }
+
+    /// Name of the backend in use (for logs / health output).
+    pub fn backend_name(&self) -> &'static str {
+        match self.backend {
+            SearchBackend::Serper(_) => "serper",
+            SearchBackend::DuckDuckGo => "duckduckgo",
         }
     }
 
     /// Search the web and return organic results.
     pub async fn search(&self, query: &str, num_results: usize) -> anyhow::Result<SearchResult> {
+        match &self.backend {
+            SearchBackend::Serper(api_key) => self.search_serper(query, num_results, api_key).await,
+            SearchBackend::DuckDuckGo => self.search_duckduckgo(query, num_results).await,
+        }
+    }
+
+    async fn search_serper(
+        &self,
+        query: &str,
+        num_results: usize,
+        api_key: &str,
+    ) -> anyhow::Result<SearchResult> {
         debug!(query = %query, count = num_results, "Searching via Serper");
 
         let response = self
             .client
-            .post(format!("{}/search", self.base_url))
-            .header("X-API-KEY", &self.api_key)
+            .post("https://google.serper.dev/search")
+            .header("X-API-KEY", api_key)
             .header("Content-Type", "application/json")
             .json(&serde_json::json!({
                 "q": query,
@@ -93,16 +137,47 @@ impl SearchClient {
             .and_then(|sp| sp.q)
             .unwrap_or_else(|| query.to_string());
 
-        debug!(
-            results = organic.len(),
-            query = %search_query,
-            "Search complete"
-        );
+        debug!(results = organic.len(), query = %search_query, "Search complete");
 
         Ok(SearchResult {
             query: search_query,
             count: organic.len(),
             results: organic,
+        })
+    }
+
+    /// Keyless search: fetch and parse DuckDuckGo's HTML results page.
+    async fn search_duckduckgo(
+        &self,
+        query: &str,
+        num_results: usize,
+    ) -> anyhow::Result<SearchResult> {
+        debug!(query = %query, count = num_results, "Searching via DuckDuckGo (keyless)");
+
+        let response = self
+            .client
+            .get("https://html.duckduckgo.com/html/")
+            .query(&[("q", query)])
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (compatible; Markify/1.0; +https://github.com/skeehn/markify)",
+            )
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("DuckDuckGo search error: {}", response.status());
+        }
+
+        let html = response.text().await?;
+        let results = parse_ddg_results(&html, num_results);
+
+        debug!(results = results.len(), query = %query, "Search complete");
+
+        Ok(SearchResult {
+            query: query.to_string(),
+            count: results.len(),
+            results,
         })
     }
 
@@ -153,6 +228,71 @@ impl SearchClient {
         }
 
         Ok(scraped)
+    }
+}
+
+/// Parse DuckDuckGo's HTML results page into organic results.
+fn parse_ddg_results(html: &str, num_results: usize) -> Vec<SerperOrganicResult> {
+    use scraper::{Html, Selector};
+
+    let doc = Html::parse_document(html);
+    let (Ok(result_sel), Ok(title_sel), Ok(snippet_sel)) = (
+        Selector::parse(".result"),
+        Selector::parse(".result__a"),
+        Selector::parse(".result__snippet"),
+    ) else {
+        return Vec::new();
+    };
+
+    let mut out = Vec::new();
+    for el in doc.select(&result_sel) {
+        if out.len() >= num_results {
+            break;
+        }
+        let Some(a) = el.select(&title_sel).next() else {
+            continue;
+        };
+        let title = a.text().collect::<String>().trim().to_string();
+        let link = a
+            .value()
+            .attr("href")
+            .map(decode_ddg_link)
+            .unwrap_or_default();
+        if title.is_empty() || link.is_empty() {
+            continue;
+        }
+        let snippet = el
+            .select(&snippet_sel)
+            .next()
+            .map(|s| s.text().collect::<String>().trim().to_string())
+            .filter(|s| !s.is_empty());
+        out.push(SerperOrganicResult {
+            position: Some(out.len() + 1),
+            title,
+            link,
+            snippet,
+        });
+    }
+    out
+}
+
+/// DuckDuckGo wraps result links as `//duckduckgo.com/l/?uddg=<encoded-url>`.
+/// Extract and percent-decode the real destination URL.
+fn decode_ddg_link(href: &str) -> String {
+    let full = if let Some(rest) = href.strip_prefix("//") {
+        format!("https://{rest}")
+    } else {
+        href.to_string()
+    };
+    if let Ok(parsed) = url::Url::parse(&full) {
+        if let Some((_, value)) = parsed.query_pairs().find(|(k, _)| k == "uddg") {
+            return value.into_owned();
+        }
+    }
+    if full.starts_with("http") {
+        full
+    } else {
+        href.to_string()
     }
 }
 
