@@ -95,8 +95,17 @@ async fn start_server(bind: &str, _mcp: bool) -> anyhow::Result<()> {
     let app = rest::create_router();
 
     let listener = tokio::net::TcpListener::bind(bind).await?;
-    info!("Markify server running on http://{}", bind);
-    info!("API docs: http://{}/health", bind);
+    // Advertise a URL that's actually reachable. A wildcard bind (0.0.0.0 / [::])
+    // isn't connectable, and on macOS `localhost` resolves to IPv6 ::1 first --
+    // which an IPv4 bind doesn't serve -- so point users at 127.0.0.1.
+    let (host, port) = bind.rsplit_once(':').unwrap_or((bind, "3000"));
+    let url_host = if matches!(host, "0.0.0.0" | "[::]" | "::" | "") {
+        "127.0.0.1"
+    } else {
+        host
+    };
+    info!("Markify server running on http://{}:{}", url_host, port);
+    info!("Health check:   http://{}:{}/health", url_host, port);
 
     axum::serve(listener, app).await?;
 
